@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="N4 QUANT">
+<meta name="theme-color" content="#020617">
+<title>N4 QUANT — ナンバーズ4 エッジ分析ターミナル</title>
+<style>
+  :root{
+    --bg:#020617; --panel:#0f172a; --panel2:#020617; --border:#1e293b;
+    --txt:#e2e8f0; --sub:#64748b; --dim:#475569;
+    --red:#e63946; --rose:#fb7185; --green:#34d399; --amber:#fbbf24; --sky:#38bdf8; --violet:#a78bfa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.55;padding-bottom:60px}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:760px;margin:0 auto;padding:0 14px}
+  header{padding:calc(env(safe-area-inset-top) + 18px) 0 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline}
+  h1{font-size:19px;letter-spacing:.25em;font-weight:700}
+  h1 .dot{color:var(--red)} h1 .v{font-size:11px;color:var(--sub);letter-spacing:0}
+  .tagline{font-size:11px;color:var(--sub);margin-top:2px}
+  .hmeta{text-align:right;font-size:11px;color:var(--sub)} .hmeta .t{font-size:10px;color:var(--dim)}
+  .syncbar{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .msg{font-size:12px;color:var(--amber);flex:1;min-width:180px}
+  nav{display:flex;gap:4px;margin:14px 0}
+  nav button{background:none;border:none;color:var(--sub);font-size:14px;padding:8px 14px;border-radius:8px;font-family:inherit}
+  nav button.on{background:#1e293b;color:var(--txt)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+  .card h3{font-size:11px;font-weight:400;color:var(--sub);margin-bottom:8px;display:flex;justify-content:space-between}
+  .btn{background:#f1f5f9;color:#0f172a;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit}
+  .btn:disabled{background:#1e293b;color:var(--sub)}
+  .btn.ghost{background:#1e293b;color:#cbd5e1}
+  .btn.danger{background:#1e293b;color:var(--rose)}
+  .btn.sm{padding:6px 12px;font-size:12px}
+  input[type=text],textarea{width:100%;background:var(--panel2);border:1px solid #334155;border-radius:8px;padding:10px 12px;color:var(--txt);font-size:16px;font-family:ui-monospace,Menlo,monospace;outline:none}
+  input[type=text]:focus,textarea:focus{border-color:#64748b}
+  .row{display:flex;gap:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .stat .l{font-size:10px;color:var(--sub)} .stat .v{font-size:17px;margin-top:2px}
+  .bignum{font-size:44px;letter-spacing:.22em;font-weight:600;color:#f8fafc}
+  .premium{font-size:28px;text-align:right}
+  .plabel{font-size:10px;color:var(--sub);text-align:right}
+  .gauge{position:relative;height:6px;background:#1e293b;border-radius:99px;overflow:hidden}
+  .gauge>i{position:absolute;top:0;bottom:0;border-radius:99px}
+  .gauge .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#475569;border-radius:0}
+  .tfrow{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:10px;color:var(--sub)}
+  .tfrow .lab{width:58px} .tfrow .val{width:44px;text-align:right}
+  .tfrow .gauge{flex:1;height:5px}
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+  .tag{font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid}
+  .tag.rose{background:#4c0519;color:#fda4af;border-color:#881337}
+  .tag.green{background:#022c22;color:#6ee7b7;border-color:#065f46}
+  .poscard{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px}
+  .poscard .pl{font-size:10px;color:var(--dim);margin-bottom:3px}
+  .poscard .r{display:flex;justify-content:space-between;font-size:13px}
+  .poscard .r .d1{color:#f1f5f9}.poscard .r .dn{color:var(--sub)}.poscard .r .sc{color:var(--dim);font-size:11px}
+  .alert{border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid}
+  .alert.wait{background:#4c0519;border-color:var(--red)}
+  .alert.wait .h{color:var(--rose);font-weight:700}
+  .alert.wait p{color:#fecdd3;font-size:13px;margin-top:4px}
+  .alert.go{background:#022c22;border-color:#059669}
+  .alert.go .h{color:var(--green);font-weight:700}
+  .alert.go p{color:#a7f3d0;font-size:13px;margin-top:4px}
+  .part{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:10px}
+  .part .lab{width:170px;color:var(--sub);flex-shrink:0}
+  .part .lab.main{color:#cbd5e1;font-weight:600}
+  .part .bar{flex:1;height:4px;background:#1e293b;border-radius:99px;overflow:hidden}
+  .part .bar>i{display:block;height:100%;background:#64748b}
+  .part .bar>i.main{background:var(--amber)}
+  .part .num{width:52px;text-align:right;color:var(--sub)}
+  .note{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:14px}
+  ul.biaslist{margin-top:8px;list-style:none}
+  ul.biaslist li{font-size:12px;color:#94a3b8}
+  .list{max-height:280px;overflow-y:auto}
+  .list .li{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid var(--border);font-size:14px}
+  .list .li:last-child{border:none}
+  .list .li .rn{color:var(--dim);font-size:12px}
+  .empty{text-align:center;padding:24px 10px}
+  .empty p{font-size:13px;color:#94a3b8;margin-bottom:14px}
+  .modebtns{display:flex;gap:4px;margin-bottom:12px}
+  .modebtns button{background:var(--panel);border:1px solid var(--border);color:var(--sub);font-size:12px;padding:7px 14px;border-radius:8px;font-family:ui-monospace,Menlo,monospace}
+  .modebtns button.on{background:#334155;color:var(--txt)}
+  .legend{display:flex;gap:14px;font-size:10px;color:var(--sub);margin-top:6px;justify-content:center}
+  .legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:4px}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:110px;margin-top:6px}
+  .bars .b{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%}
+  .bars .b i{display:block;width:100%;background:#475569;border-radius:3px 3px 0 0;min-height:2px}
+  .bars .b span{font-size:9px;color:var(--dim)}
+  .settings p{font-size:12px;color:#94a3b8;line-height:1.7;margin-bottom:8px}
+  label.flabel{font-size:11px;color:var(--sub);display:block;margin-bottom:5px}
+  svg{display:block}
+  @media(min-width:600px){.bignum{font-size:56px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 class="mono">N4<span class="dot">·</span>QUANT <span class="v">web</span></h1>
+      <div class="tagline">ナンバーズ4 パリミュチュエル・エッジ分析ターミナル</div>
+    </div>
+    <div class="hmeta mono">
+      <div id="hcount">DATA 0回</div>
+      <div class="t" id="hsync"></div>
+    </div>
+  </header>
+
+  <div class="syncbar">
+    <button class="btn sm" id="syncBtn">↻ データ更新</button>
+    <button class="btn sm ghost" id="exportBtn">書き出し</button>
+    <span class="msg" id="msg"></span>
+  </div>
+
+  <nav>
+    <button data-tab="signal" class="on">シグナル</button>
+    <button data-tab="backtest">バックテスト</button>
+    <button data-tab="data">データ</button>
+  </nav>
+
+  <main id="main"></main>
+</div>
+
+<script>
+"use strict";
+/* ================= 定数 ================= */
+const LS_DRAWS="n4quant-web-draws", LS_META="n4quant-web-meta";
+const BET=200, PAY_STRAIGHT=900000, PAY_BOX=37500;
+const WARMUP=20, CONF_THRESHOLD=60, TIMEFRAMES=[10,20,50], POS=4;
+const POS_LABEL=["千","百","十","一"];
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const fmtYen=v=>(v<0?"-":"")+"¥"+Math.abs(v).toLocaleString();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ================= 状態 ================= */
+let draws=[], mode="straight", tab="signal", meta={lastSync:null,dataUrl:"data.json"};
+try{draws=JSON.parse(localStorage.getItem(LS_DRAWS)||"[]")}catch(e){draws=[]}
+try{meta=Object.assign(meta,JSON.parse(localStorage.getItem(LS_META)||"{}"))}catch(e){}
+if(!meta.dataUrl)meta.dataUrl="data.json";
+function saveDraws(){try{localStorage.setItem(LS_DRAWS,JSON.stringify(draws))}catch(e){setMsg("保存に失敗しました(容量超過の可能性)")}}
+function saveMeta(){try{localStorage.setItem(LS_META,JSON.stringify(meta))}catch(e){}}
+function setMsg(t){document.getElementById("msg").textContent=t||""}
+
+/* ================= ロジック ================= */
+function digitStats(ds,windowSize){
+  const w=ds.slice(-windowSize);
+  const freq=Array.from({length:POS},()=>Array(10).fill(0));
+  w.forEach(d=>{for(let p=0;p<POS;p++)freq[p][+d.n[p]]++});
+  const gap=Array.from({length:POS},()=>Array(10).fill(ds.length));
+  for(let p=0;p<POS;p++)for(let dg=0;dg<10;dg++)
+    for(let i=ds.length-1;i>=0;i--)
+      if(+ds[i].n[p]===dg){gap[p][dg]=ds.length-1-i;break}
+  return{freq,gap};
+}
+function popularity(num,today){
+  const d=num.split("").map(Number);
+  let s=0.2; const buy=[],fade=[];
+  if(num.startsWith("19")||num.startsWith("20")){s+=0.4;buy.push("西暦型(19**/20**)")}
+  const mm=d[0]*10+d[1],dd=d[2]*10+d[3];
+  if(mm>=1&&mm<=12&&dd>=1&&dd<=31){s+=0.25;buy.push("日付型(MMDD)")}
+  if(d[0]===d[1]&&d[1]===d[2]&&d[2]===d[3]){s+=0.5;buy.push("4桁ゾロ目")}
+  else{const c=Array(10).fill(0);d.forEach(x=>c[x]++);if(c.some(x=>x===3)){s+=0.2;buy.push("トリプル")}}
+  if(d[0]===d[3]&&d[1]===d[2]&&d[0]!==d[1]){s+=0.2;buy.push("左右対称(回文)")}
+  if(d[0]===d[1]&&d[2]===d[3]&&d[0]!==d[2]){s+=0.2;buy.push("ニコイチ(AABB)")}
+  if(d[0]===d[2]&&d[1]===d[3]&&d[0]!==d[1]){s+=0.2;buy.push("ニコイチ(ABAB)")}
+  const asc=d.every((x,i)=>i===0||x===d[i-1]+1), desc=d.every((x,i)=>i===0||x===d[i-1]-1);
+  if(asc||desc){s+=0.3;buy.push("ストレート連番")}
+  const sev=d.filter(x=>x===7).length;
+  if(sev>=2){s+=0.06*sev;buy.push("7を複数含む")}
+  if(d.every(x=>x<=3)){s+=0.08;buy.push("誕生日圏の低位数字のみ")}
+  const av=d.filter(x=>x===4||x===9).length;
+  if(av){s-=0.06*av;fade.push("忌避数字4/9を"+av+"個含む")}
+  if(today){
+    if(today.dateNum&&num===today.dateNum){s+=0.3;buy.push("本日の日付(MMDD)そのもの")}
+    if(today.yearNum&&num===today.yearNum){s+=0.25;buy.push("今年の西暦そのもの")}
+    const ov=d.filter(x=>today.dateDigits.has(String(x))).length;
+    if(ov>=3){s+=0.05*ov;buy.push("本日の日付数字と強く重複")}
+  }
+  return{score:clamp(s,0,1),buy,fade};
+}
+function premiumOf(p){ if(p<=0.7)return clamp(1.5-1.0*p,0.8,1.5); return clamp(0.8-3.0*(p-0.7),0.3,0.8); }
+function todayBias(now=new Date()){
+  const m=now.getMonth()+1,d=now.getDate(),y=now.getFullYear();
+  let s=0.45; const notes=[];
+  const dateNum=String(m).padStart(2,"0")+String(d).padStart(2,"0");
+  const yearNum=String(y);
+  notes.push("本日 "+m+"/"+d+" は「"+dateNum+"」として日付買いが集中");
+  notes.push("今年の西暦「"+yearNum+"」も恒常的な人気番号");
+  if(d<=12){s+=0.12;notes.push("日が12以下: 月日反転(DDMM)の重複買いも増加")}
+  if(m===d){s+=0.13;notes.push("月日ゾロ日: 記念日購買がさらに集中")}
+  return{strength:clamp(s,0,1),dateDigits:new Set(dateNum.split("")),dateNum,yearNum,notes,label:m+"/"+d};
+}
+function momentumAt(ds,look){
+  const win=Math.max(8,Math.round(look/2));
+  if(ds.length<win+5)return null;
+  const start=Math.max(win,ds.length-look);
+  let hits=0,total=0;
+  for(let i=start;i<ds.length;i++){
+    const{freq}=digitStats(ds.slice(0,i),win);
+    for(let p=0;p<POS;p++){
+      const ranked=freq[p].map((f,dg)=>({f,dg})).sort((a,b)=>b.f-a.f);
+      const hot=new Set(ranked.slice(0,3).map(x=>x.dg));
+      if(hot.has(+ds[i].n[p]))hits++;
+      total++;
+    }
+  }
+  const obs=total?hits/total:0.3;
+  return{m:clamp((obs-0.3)/0.3,-1,1),samples:total,look};
+}
+function detectRegimeMTF(ds){
+  const tfs=TIMEFRAMES.map(l=>momentumAt(ds,l)).filter(Boolean);
+  if(!tfs.length)return{composite:0,tfs:[],agreement:0};
+  const wsum=tfs.reduce((a,t)=>a+Math.sqrt(t.samples),0);
+  const composite=clamp(tfs.reduce((a,t)=>a+t.m*Math.sqrt(t.samples),0)/wsum,-1,1);
+  const mean=tfs.reduce((a,t)=>a+t.m,0)/tfs.length;
+  const va=tfs.reduce((a,t)=>a+(t.m-mean)**2,0)/tfs.length;
+  return{composite,tfs,agreement:clamp(1-Math.sqrt(va)*1.5,0,1)};
+}
+function lowEntropy(ds,n=20){
+  const w=ds.slice(-n); if(w.length<10)return 0;
+  const HMAX=Math.log2(10);
+  const g=Array(10).fill(0);
+  w.forEach(d=>d.n.split("").forEach(x=>g[+x]++));
+  const gt=w.length*POS;
+  const Hg=-g.reduce((a,x)=>{const p=x/gt;return a+(p>0?p*Math.log2(p):0)},0);
+  const glo=clamp((1-Hg/HMAX)*5,0,1);
+  let ps=0;
+  for(let p=0;p<POS;p++){
+    const c=Array(10).fill(0);
+    w.forEach(d=>c[+d.n[p]]++);
+    const Hp=-c.reduce((a,x)=>{const q=x/w.length;return a+(q>0?q*Math.log2(q):0)},0);
+    ps+=clamp((1-Hp/HMAX)*3,0,1);
+  }
+  return clamp(glo*0.5+(ps/POS)*0.5,0,1);
+}
+function predict(ds,today){
+  const regime=detectRegimeMTF(ds);
+  const wHot=clamp(0.5+0.4*regime.composite,0.1,0.9);
+  const sw=Math.min(20,Math.max(10,Math.floor(ds.length/3)));
+  const{freq,gap}=digitStats(ds,sw);
+  const positions=[];
+  for(let p=0;p<POS;p++){
+    const mF=Math.max(...freq[p],1),mG=Math.max(...gap[p],1);
+    positions.push(freq[p].map((f,dg)=>({dg,score:wHot*(f/mF)+(1-wHot)*(gap[p][dg]/mG)})).sort((a,b)=>b.score-a.score));
+  }
+  const combos=[];
+  for(const a of positions[0].slice(0,3))
+  for(const b of positions[1].slice(0,3))
+  for(const c of positions[2].slice(0,3))
+  for(const e of positions[3].slice(0,3)){
+    const num=""+a.dg+b.dg+c.dg+e.dg;
+    const stat=(a.score+b.score+c.score+e.score)/POS;
+    const pop=popularity(num,today);
+    combos.push({num,stat,pop,utility:stat*0.6+(1-pop.score)*0.4});
+  }
+  combos.sort((x,y)=>y.utility-x.utility);
+  const best=combos[0];
+  return{digits:best.num,pop:best.pop,premium:premiumOf(best.pop.score),positions,regime,wHot,
+    gapScore:combos.length>1?best.utility-combos[1].utility:0};
+}
+function runBacktest(ds,md){
+  const rows=[]; let cost=0,rF=0,rA=0,sH=0,bH=0;
+  const base=md==="straight"?PAY_STRAIGHT:PAY_BOX;
+  for(let i=WARMUP;i<ds.length;i++){
+    const pred=predict(ds.slice(0,i),null);
+    const act=ds[i].n;
+    cost+=BET;
+    const st=pred.digits===act;
+    const bx=pred.digits.split("").sort().join("")===act.split("").sort().join("");
+    if(st)sH++; if(bx)bH++;
+    const hit=md==="straight"?st:bx;
+    if(hit){rF+=base;rA+=Math.round(base*pred.premium)}
+    rows.push({i:ds[i].r,eqFixed:rF-cost,eqAdj:rA-cost});
+  }
+  return{rows,cost,retFixed:rF,retAdj:rA,sHits:sH,bHits:bH,trades:rows.length,
+    roiFixed:cost?rF/cost*100:0,roiAdj:cost?rA/cost*100:0};
+}
+function confidenceScore(ds,pred,today){
+  if(ds.length<WARMUP)return{score:30,parts:null};
+  const distortion=(1-pred.pop.score)*40;
+  const avoid=pred.digits.split("").filter(x=>!today.dateDigits.has(x)).length;
+  const dateEdge=today.strength*(avoid/POS)*20;
+  const entropyEdge=lowEntropy(ds)*15;
+  const regimeEdge=pred.regime.agreement*Math.abs(pred.regime.composite)*12;
+  const clarity=clamp(pred.gapScore*40,0,8);
+  const score=Math.round(clamp(15+distortion+dateEdge+entropyEdge+regimeEdge+clarity,5,95));
+  return{score,parts:{distortion,dateEdge,entropyEdge,regimeEdge,clarity}};
+}
+
+/* ================= データ操作 ================= */
+function mergeDraws(incoming){
+  const map=new Map(draws.map(x=>[x.r,x]));
+  let added=0;
+  incoming.forEach(x=>{
+    if(!map.has(x.r)){map.set(x.r,x);added++}
+    else if(x.d&&!map.get(x.r).d)map.set(x.r,Object.assign({},map.get(x.r),{d:x.d}));
+  });
+  draws=[...map.values()].sort((a,b)=>a.r-b.r);
+  saveDraws();
+  return added;
+}
+async function syncRemote(){
+  if(!meta.dataUrl){setMsg("データソースURL未設定です(「データ」タブで設定)");renderTab("data");return}
+  const btn=document.getElementById("syncBtn");
+  btn.disabled=true;btn.textContent="同期中…";setMsg("");
+  try{
+    const res=await fetch(meta.dataUrl,{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const arr=await res.json();
+    const inc=(Array.isArray(arr)?arr:[]).map(x=>({
+      r:Number(x.round!==undefined?x.round:x.r),
+      n:String(x.number!==undefined?x.number:x.n).padStart(4,"0"),
+      d:x.date||x.d||null
+    })).filter(x=>Number.isInteger(x.r)&&/^\d{4}$/.test(x.n));
+    const added=mergeDraws(inc);
+    meta.lastSync=Date.now();saveMeta();
+    setMsg(added?("同期完了: "+added+"回分を新規追加"):"同期完了: 新規なし");
+  }catch(e){
+    setMsg("取得失敗: "+e.message+"(URLとCORS設定を確認)");
+  }finally{
+    btn.disabled=false;btn.textContent="↻ データ更新";render();
+  }
+}
+function exportJson(){
+  const blob=new Blob([JSON.stringify(draws,null,1)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="n4quant-data.json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+function importBulk(text){
+  const lines=text.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  const parsed=[];
+  let autoR=draws.length?Math.max(...draws.map(x=>x.r))+1:1;
+  for(const line of lines){
+    const full=line.match(/(\d{3,5})[^\d]+(\d{4})(?:[^\d]+(\d{4}-\d{2}-\d{2}))?/);
+    if(full){parsed.push({r:+full[1],n:full[2],d:full[3]||null});continue}
+    const only=line.match(/^(\d{4})$/);
+    if(only)parsed.push({r:autoR++,n:only[1],d:null});
+  }
+  if(!parsed.length){setMsg("解釈できる行がありません(例: 6800,1234 または 1234)");return}
+  const added=mergeDraws(parsed);
+  setMsg(added+"回分をインポートしました");
+  render();
+}
+function importJsonFile(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const arr=JSON.parse(rd.result);
+      const inc=(Array.isArray(arr)?arr:[]).map(x=>({r:+(x.r??x.round),n:String(x.n??x.number).padStart(4,"0"),d:x.d||x.date||null}))
+        .filter(x=>Number.isInteger(x.r)&&/^\d{4}$/.test(x.n));
+      const added=mergeDraws(inc);
+      setMsg(added+"回分を復元しました");render();
+    }catch(e){setMsg("JSONの読み込みに失敗しました")}
+  };
+  rd.readAsText(file);
+}
+function genDemo(){
+  draws=Array.from({length:120},(_,i)=>({r:i+1,n:String(Math.floor(Math.random()*10000)).padStart(4,"0"),d:null}));
+  saveDraws();setMsg("デモデータ120回分を生成しました");render();
+}
+
+/* ================= 描画部品 ================= */
+function gaugeHtml(m,color){
+  const left=m>=0?50:50+m*50, w=Math.abs(m)*50;
+  return '<div class="gauge"><span class="mid"></span><i style="left:'+left+'%;width:'+w+'%;background:var(--'+color+')"></i></div>';
+}
+function equitySvg(rows){
+  if(!rows.length)return"";
+  const W=700,H=200,PAD=8;
+  const vals=rows.flatMap(r=>[r.eqFixed,r.eqAdj]);
+  let lo=Math.min(0,...vals),hi=Math.max(0,...vals);
+  if(hi===lo)hi=lo+1;
+  const X=i=>PAD+(W-2*PAD)*(rows.length===1?0.5:i/(rows.length-1));
+  const Y=v=>H-PAD-(H-2*PAD)*((v-lo)/(hi-lo));
+  const line=key=>rows.map((r,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(r[key]).toFixed(1)).join(" ");
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="200" preserveAspectRatio="none">'
+    +'<line x1="0" x2="'+W+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="#475569" stroke-dasharray="5 5" stroke-width="1"/>'
+    +'<path d="'+line("eqFixed")+'" fill="none" stroke="#64748b" stroke-width="1.6"/>'
+    +'<path d="'+line("eqAdj")+'" fill="none" stroke="#e63946" stroke-width="2.2"/>'
+    +'</svg>'
+    +'<div class="legend"><span><i style="background:#e63946"></i>プレミアム調整</span><span><i style="background:#64748b"></i>固定配当</span></div>';
+}
+function freqBars(){
+  const counts=Array.from({length:10},(_,dg)=>draws.reduce((a,d)=>a+d.n.split("").filter(x=>+x===dg).length,0));
+  const max=Math.max(...counts,1);
+  return '<div class="bars">'+counts.map((c,dg)=>'<div class="b"><i style="height:'+(c/max*100)+'%"></i><span class="mono">'+dg+'</span></div>').join("")+'</div>';
+}
+
+/* ================= タブ描画 ================= */
+function renderSignal(){
+  const today=todayBias();
+  if(draws.length<15){
+    return '<div class="card empty"><p>分析には15回分以上のデータが必要です(現在 '+draws.length+'回)。<br>「データ」タブの一括インポートで過去の当せん番号を貼り付けるか、データソースURLを設定して同期してください。</p>'
+      +'<button class="btn" id="demoBtn2">デモデータで試す</button></div>';
+  }
+  const pred=predict(draws,today);
+  const conf=confidenceScore(draws,pred,today);
+  const reg=pred.regime, isT=reg.composite>=0;
+  const wait=conf.score<CONF_THRESHOLD;
+  let h="";
+  // レジーム
+  h+='<div class="card"><h3><span>相場環境認識（マルチタイムフレーム）</span><span class="mono">整合性 '+(reg.agreement*100).toFixed(0)+'%</span></h3>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<b style="color:var(--'+(isT?"amber":"sky")+');font-size:14px">'+(isT?"トレンド相場（順張り・ホット重視）":"調整相場（逆張り・コールド重視）")+'</b>'
+    +'<span class="mono" style="color:#94a3b8;font-size:13px">合成M '+(reg.composite>=0?"+":"")+reg.composite.toFixed(2)+'</span></div>';
+  reg.tfs.forEach(t=>{
+    h+='<div class="tfrow"><span class="lab mono">'+(t.look===10?"短期":t.look===20?"中期":"長期")+' '+t.look+'回</span>'
+      +gaugeHtml(t.m,t.m>=0?"amber":"sky")
+      +'<span class="val mono">'+(t.m>=0?"+":"")+t.m.toFixed(2)+'</span></div>';
+  });
+  h+='<div style="font-size:11px;color:var(--sub);margin-top:9px" class="mono">Hot重み '+Math.round(pred.wHot*100)+'% / Cold重み '+Math.round((1-pred.wHot)*100)+'%</div></div>';
+  // 推奨番号
+  h+='<div class="card"><h3>推奨番号（統計スコア × 不人気EVの81通り最適化）</h3>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div class="bignum mono">'+pred.digits+'</div>'
+    +'<div><div class="premium mono" style="color:var(--'+(pred.premium>=1?"amber":"rose")+')">×'+pred.premium.toFixed(2)+'</div><div class="plabel">予想配当プレミアム</div></div></div>'
+    +'<div class="tags">'
+    +(pred.pop.buy.length===0?'<span class="tag green">大衆人気パターンなし（配当上振れ期待）</span>':"")
+    +pred.pop.buy.map(t=>'<span class="tag rose">人気要因: '+esc(t)+'</span>').join("")
+    +pred.pop.fade.map(t=>'<span class="tag green">'+esc(t)+'</span>').join("")
+    +'</div><div class="grid4" style="margin-top:12px">';
+  pred.positions.forEach((s,p)=>{
+    h+='<div class="poscard"><div class="pl">'+POS_LABEL[p]+'の位</div>';
+    s.slice(0,3).forEach((x,i)=>{h+='<div class="r mono"><span class="'+(i===0?"d1":"dn")+'">'+x.dg+'</span><span class="sc">'+x.score.toFixed(2)+'</span></div>'});
+    h+='</div>';
+  });
+  h+='</div></div>';
+  // 本日バイアス
+  h+='<div class="card"><h3><span>本日（'+today.label+'）の大衆バイアス強度</span><span class="mono">'+(today.strength*100).toFixed(0)+'%</span></h3>'
+    +'<div class="gauge"><i style="left:0;width:'+(today.strength*100)+'%;background:var(--violet)"></i></div>'
+    +'<ul class="biaslist">'+today.notes.map(n=>'<li>・'+esc(n)+'</li>').join("")+'</ul></div>';
+  // コンフィデンス
+  h+='<div class="card"><h3><span>オッズ歪み期待度（コンフィデンス）</span><span class="mono" style="font-size:22px;color:var(--'+(wait?"rose":"green")+')">'+conf.score+'<small style="font-size:11px;color:var(--sub)">%</small></span></h3>'
+    +'<div class="gauge"><i style="left:0;width:'+conf.score+'%;background:var(--'+(wait?"red":"green")+')"></i></div>';
+  if(conf.parts){
+    const P=(lab,v,max,main)=>'<div class="part"><span class="lab'+(main?" main":"")+'">'+lab+'</span><span class="bar"><i class="'+(main?"main":"")+'" style="width:'+clamp(v/max*100,0,100)+'%"></i></span><span class="num mono">'+v.toFixed(1)+'/'+max+'</span></div>';
+    h+='<div style="margin-top:10px">'
+      +P("番号の不人気度（配当上振れ余地）",conf.parts.distortion,40,true)
+      +P("日付バイアス回避エッジ",conf.parts.dateEdge,20)
+      +P("出目の偏り（複合エントロピー）",conf.parts.entropyEdge,15)
+      +P("MTFレジーム整合",conf.parts.regimeEdge,12)
+      +P("候補スコアの明瞭さ",conf.parts.clarity,8)
+      +'</div>';
+  }
+  h+='</div>';
+  // WAIT/ENTRY
+  if(wait){
+    h+='<div class="alert wait"><div class="h mono">⏸ WAIT — 本日は【見送り（ペーパー・トレード）】を推奨</div>'
+      +'<p>オッズ歪み期待度 '+conf.score+'% ＜ 閾値 '+CONF_THRESHOLD+'%。実弾を投じず記録のみに留めてください。</p></div>';
+  }else{
+    h+='<div class="alert go"><div class="h mono">▶ ENTRY 条件クリア（歪み妙味あり）</div>'
+      +'<p>1回あたりの投入は定額200円・総資金の1%以下を厳守。</p></div>';
+  }
+  return h;
+}
+function renderBacktest(){
+  if(draws.length<=WARMUP+5){
+    return '<div class="card empty"><p>バックテストには'+(WARMUP+6)+'回分以上のデータが必要です(現在 '+draws.length+'回)。</p></div>';
+  }
+  const bt=runBacktest(draws,mode);
+  let h='<div class="modebtns">'
+    +'<button data-mode="straight" class="'+(mode==="straight"?"on":"")+'">ストレート</button>'
+    +'<button data-mode="box" class="'+(mode==="box"?"on":"")+'">ボックス</button></div>';
+  h+='<div class="grid2" style="margin-bottom:14px">'
+    +'<div class="stat"><div class="l">回収率（プレミアム調整）</div><div class="v mono" style="color:var(--'+(bt.roiAdj>=100?"green":"rose")+')">'+bt.roiAdj.toFixed(1)+'%</div></div>'
+    +'<div class="stat"><div class="l">回収率（固定配当）</div><div class="v mono">'+bt.roiFixed.toFixed(1)+'%</div></div>'
+    +'<div class="stat"><div class="l">歪みプレミアム寄与</div><div class="v mono" style="color:var(--amber)">'+(bt.roiAdj-bt.roiFixed>=0?"+":"")+(bt.roiAdj-bt.roiFixed).toFixed(1)+' pt</div></div>'
+    +'<div class="stat"><div class="l">的中</div><div class="v mono">ST '+bt.sHits+' / BOX '+bt.bHits+' ('+bt.trades+'回)</div></div></div>';
+  h+='<div class="card"><h3>エクイティカーブ（累積損益）</h3>'+equitySvg(bt.rows)+'</div>';
+  h+='<p class="note">※ プレミアムは番号固有の人気度で算定(人気番号の的中は最大0.3倍まで急落する非線形モデル)。抽選確率そのものは操作不能であり、本ツールは控除率55%を上回る期待値を保証しません。長期の理論回収率は約45%に収束します。実質的な価値はWAIT判定と定額投入による資金管理の規律にあります。</p>';
+  return h;
+}
+function renderData(){
+  let h='<div class="card settings"><h3>自動同期（データソースURL）</h3>'
+    +'<p>JSON配列を返すURLを設定すると「↻ データ更新」で取り込めます。形式: <span class="mono">[{"round":6800,"date":"2026-07-10","number":"1234"}]</span><br>'
+    +'同一リポジトリのGitHub Pagesに置かれている場合は相対パス「data.json」のままでOKです(同一オリジンのためCORS不要)。</p>'
+    +'<label class="flabel">データソースURL</label>'
+    +'<input type="text" id="dataUrl" placeholder="https://〇〇.github.io/n4/data.json" value="'+esc(meta.dataUrl||"")+'">'
+    +'<div class="row" style="margin-top:8px"><button class="btn sm" id="saveUrlBtn">URLを保存</button></div></div>';
+  h+='<div class="card"><h3>一括インポート（過去分のバックフィル用）</h3>'
+    +'<p style="font-size:11px;color:var(--sub);margin-bottom:6px">1行1件。「回号,番号」「回号,番号,YYYY-MM-DD」または番号のみ(4桁)。集計サイトからのコピペを想定。</p>'
+    +'<textarea id="bulk" rows="4" placeholder="6798,0731&#10;6799,2214,2026-07-09&#10;6800,9046"></textarea>'
+    +'<div class="row" style="margin-top:8px"><button class="btn sm" id="bulkBtn">インポート</button>'
+    +'<button class="btn sm ghost" id="importJsonBtn">JSON復元</button>'
+    +'<input type="file" id="jsonFile" accept=".json" style="display:none"></div></div>';
+  h+='<div class="card"><h3>手動追加（1件ずつ・古い回から順に）</h3>'
+    +'<div class="row"><input type="text" id="one" inputmode="numeric" maxlength="4" placeholder="例: 4071">'
+    +'<button class="btn" id="addBtn">追加</button></div>'
+    +'<div class="row" style="margin-top:10px"><button class="btn sm ghost" id="demoBtn">デモデータ生成</button>'
+    +'<button class="btn sm danger" id="clearBtn">全削除</button></div></div>';
+  if(draws.length){
+    h+='<div class="card"><h3>全期間・数字別出現回数（全位置合算）</h3>'+freqBars()+'</div>';
+    h+='<div class="card list">'+[...draws].reverse().slice(0,80).map(d=>
+      '<div class="li mono"><span class="rn">第'+d.r+'回'+(d.d?' ('+esc(d.d)+')':"")+'</span><span style="letter-spacing:.2em">'+d.n+'</span></div>').join("")+'</div>';
+  }
+  return h;
+}
+
+/* ================= レンダラ & イベント ================= */
+function renderHeader(){
+  document.getElementById("hcount").textContent="DATA "+draws.length+"回";
+  document.getElementById("hsync").textContent=meta.lastSync?("同期 "+new Date(meta.lastSync).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})):"";
+}
+function renderTab(t){tab=t;
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  render();
+}
+function render(){
+  renderHeader();
+  const main=document.getElementById("main");
+  main.innerHTML= tab==="signal"?renderSignal() : tab==="backtest"?renderBacktest() : renderData();
+  bindTab();
+}
+function bindTab(){
+  const $=id=>document.getElementById(id);
+  const on=(id,fn)=>{const el=$(id);if(el)el.addEventListener("click",fn)};
+  on("demoBtn",genDemo); on("demoBtn2",genDemo);
+  on("clearBtn",()=>{if(confirm("全データを削除しますか?")){draws=[];saveDraws();setMsg("全削除しました");render()}});
+  on("bulkBtn",()=>importBulk($("bulk").value));
+  on("saveUrlBtn",()=>{meta.dataUrl=$("dataUrl").value.trim();saveMeta();setMsg("URLを保存しました")});
+  on("importJsonBtn",()=>$("jsonFile").click());
+  const jf=$("jsonFile"); if(jf)jf.addEventListener("change",e=>{if(e.target.files[0])importJsonFile(e.target.files[0])});
+  on("addBtn",()=>{
+    const v=$("one").value.replace(/\D/g,"");
+    if(!/^\d{4}$/.test(v)){setMsg("4桁の数字を入力してください");return}
+    const nextR=draws.length?Math.max(...draws.map(x=>x.r))+1:1;
+    mergeDraws([{r:nextR,n:v,d:null}]);
+    $("one").value="";setMsg("追加しました(第"+nextR+"回)");render();
+  });
+  document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;render()}));
+}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>renderTab(b.dataset.tab)));
+document.getElementById("syncBtn").addEventListener("click",syncRemote);
+document.getElementById("exportBtn").addEventListener("click",exportJson);
+render();
+</script>
+</body>
+</html>
