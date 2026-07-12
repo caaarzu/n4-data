@@ -1,0 +1,34 @@
+name: Update Numbers4 data
+
+on:
+  schedule:
+    # 平日(月-金)の20:30 JST (UTCでは11:30) に自動実行
+    - cron: '30 11 * * 1-5'
+  workflow_dispatch: # Actionsタブから手動で実行するための設定
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Run fetch script
+        run: python scripts/fetch_n4.py
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/data.json
+          # 変更がある場合のみコミットしてプッシュする
+          git diff --quiet && git diff --staged --quiet || git commit -m "Auto-update N4 data"
+          git push
