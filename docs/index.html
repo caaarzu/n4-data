@@ -1,0 +1,958 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="N4 QUANT">
+<meta name="theme-color" content="#020617">
+<title>N4 QUANT — ナンバーズ4 エッジ分析ターミナル</title>
+<style>
+  :root{
+    --bg:#020617; --panel:#0f172a; --panel2:#020617; --border:#1e293b;
+    --txt:#e2e8f0; --sub:#64748b; --dim:#475569;
+    --red:#e63946; --rose:#fb7185; --green:#34d399; --amber:#fbbf24; --sky:#38bdf8; --violet:#a78bfa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--txt);font-family:-apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;font-size:15px;line-height:1.55;padding-bottom:60px}
+  .mono{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:760px;margin:0 auto;padding:0 14px}
+  header{padding:calc(env(safe-area-inset-top) + 18px) 0 12px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:baseline}
+  h1{font-size:19px;letter-spacing:.25em;font-weight:700}
+  h1 .dot{color:var(--red)} h1 .v{font-size:11px;color:var(--sub);letter-spacing:0}
+  .tagline{font-size:11px;color:var(--sub);margin-top:2px}
+  .hmeta{text-align:right;font-size:11px;color:var(--sub)} .hmeta .t{font-size:10px;color:var(--dim)}
+  .syncbar{display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap}
+  .msg{font-size:12px;color:var(--amber);flex:1;min-width:180px}
+  nav{display:flex;gap:4px;margin:14px 0;overflow-x:auto}
+  nav button{background:none;border:none;color:var(--sub);font-size:13px;padding:8px 12px;border-radius:8px;font-family:inherit;white-space:nowrap}
+  nav button.on{background:#1e293b;color:var(--txt)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+  .card h3{font-size:11px;font-weight:400;color:var(--sub);margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .btn{background:#f1f5f9;color:#0f172a;border:none;border-radius:8px;padding:9px 16px;font-size:13px;font-weight:600;font-family:inherit}
+  .btn:disabled{background:#1e293b;color:var(--sub)}
+  .btn.ghost{background:#1e293b;color:#cbd5e1}
+  .btn.danger{background:#1e293b;color:var(--rose)}
+  .btn.sm{padding:6px 12px;font-size:12px}
+  input[type=text],input[type=number],textarea,select{width:100%;background:var(--panel2);border:1px solid #334155;border-radius:8px;padding:10px 12px;color:var(--txt);font-size:16px;font-family:ui-monospace,Menlo,monospace;outline:none;appearance:none}
+  input:focus,textarea:focus,select:focus{border-color:#64748b}
+  select{background-image:linear-gradient(45deg,transparent 50%,#64748b 50%),linear-gradient(135deg,#64748b 50%,transparent 50%);background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px;background-repeat:no-repeat}
+  input[type=range]{width:100%;accent-color:var(--red);height:28px}
+  .row{display:flex;gap:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .stat .l{font-size:10px;color:var(--sub)} .stat .v{font-size:17px;margin-top:2px}
+  .bignum{font-size:44px;letter-spacing:.22em;font-weight:600;color:#f8fafc}
+  .premium{font-size:28px;text-align:right}
+  .plabel{font-size:10px;color:var(--sub);text-align:right}
+  .gauge{position:relative;height:6px;background:#1e293b;border-radius:99px;overflow:hidden}
+  .gauge>i{position:absolute;top:0;bottom:0;border-radius:99px}
+  .gauge .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:#475569;border-radius:0}
+  .tfrow{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:10px;color:var(--sub)}
+  .tfrow .lab{width:58px} .tfrow .val{width:44px;text-align:right}
+  .tfrow .gauge{flex:1;height:5px}
+  .tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+  .tag{font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid}
+  .tag.rose{background:#4c0519;color:#fda4af;border-color:#881337}
+  .tag.green{background:#022c22;color:#6ee7b7;border-color:#065f46}
+  .tag.amber{background:#451a03;color:#fcd34d;border-color:#92400e}
+  .poscard{background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px}
+  .poscard .pl{font-size:10px;color:var(--dim);margin-bottom:3px}
+  .poscard .r{display:flex;justify-content:space-between;font-size:13px}
+  .poscard .r .d1{color:#f1f5f9}.poscard .r .dn{color:var(--sub)}.poscard .r .sc{color:var(--dim);font-size:11px}
+  .alert{border-radius:10px;padding:14px;margin-bottom:14px;border:1px solid}
+  .alert.wait{background:#4c0519;border-color:var(--red)}
+  .alert.wait .h{color:var(--rose);font-weight:700}
+  .alert.wait p{color:#fecdd3;font-size:13px;margin-top:4px}
+  .alert.go{background:#022c22;border-color:#059669}
+  .alert.go .h{color:var(--green);font-weight:700}
+  .alert.go p{color:#a7f3d0;font-size:13px;margin-top:4px}
+  .part{display:flex;align-items:center;gap:8px;margin-top:6px;font-size:10px}
+  .part .lab{width:170px;color:var(--sub);flex-shrink:0}
+  .part .lab.main{color:#cbd5e1;font-weight:600}
+  .part .bar{flex:1;height:4px;background:#1e293b;border-radius:99px;overflow:hidden}
+  .part .bar>i{display:block;height:100%;background:#64748b}
+  .part .bar>i.main{background:var(--amber)}
+  .part .num{width:52px;text-align:right;color:var(--sub)}
+  .note{font-size:11px;color:var(--dim);line-height:1.7;margin-bottom:14px}
+  ul.biaslist{margin-top:8px;list-style:none}
+  ul.biaslist li{font-size:12px;color:#94a3b8}
+  .list{max-height:280px;overflow-y:auto}
+  .list .li{display:flex;justify-content:space-between;padding:6px 4px;border-bottom:1px solid var(--border);font-size:14px}
+  .list .li:last-child{border:none}
+  .list .li .rn{color:var(--dim);font-size:12px}
+  .empty{text-align:center;padding:24px 10px}
+  .empty p{font-size:13px;color:#94a3b8;margin-bottom:14px}
+  .modebtns{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+  .modebtns button{background:var(--panel);border:1px solid var(--border);color:var(--sub);font-size:12px;padding:7px 14px;border-radius:8px;font-family:ui-monospace,Menlo,monospace}
+  .modebtns button.on{background:#334155;color:var(--txt)}
+  .legend{display:flex;gap:14px;font-size:10px;color:var(--sub);margin-top:6px;justify-content:center;flex-wrap:wrap}
+  .legend i{display:inline-block;width:14px;height:2px;vertical-align:middle;margin-right:4px}
+  .bars{display:flex;align-items:flex-end;gap:4px;height:110px;margin-top:6px}
+  .bars .b{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%}
+  .bars .b i{display:block;width:100%;background:#475569;border-radius:3px 3px 0 0;min-height:2px}
+  .bars .b span{font-size:9px;color:var(--dim)}
+  .settings p{font-size:12px;color:#94a3b8;line-height:1.7;margin-bottom:8px}
+  label.flabel{font-size:11px;color:var(--sub);display:block;margin-bottom:5px}
+  svg{display:block}
+  /* v3: コントロールパネル */
+  .ctrl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .ctrl .cbox{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+  .ctrl .cbox .cl{font-size:10px;color:var(--sub);margin-bottom:6px;display:flex;justify-content:space-between}
+  .ctrl .cbox .cl b{color:var(--amber);font-weight:600}
+  /* v3: エクイティカーブのツールチップ */
+  .eqwrap{position:relative}
+  .ttip{position:absolute;pointer-events:none;background:#0f172aee;border:1px solid #334155;border-radius:8px;padding:6px 10px;font-size:11px;line-height:1.5;color:var(--txt);white-space:nowrap;transform:translate(-50%,-110%);opacity:0;transition:opacity .12s;z-index:5;box-shadow:0 4px 14px #0009}
+  .ttip.show{opacity:1}
+  .ttip .tr{color:var(--sub);font-size:10px}
+  /* v3: テーブル */
+  .tblwrap{overflow-x:auto;max-height:340px;overflow-y:auto;border:1px solid var(--border);border-radius:8px}
+  table{width:100%;border-collapse:collapse;font-size:12px;min-width:430px}
+  th{position:sticky;top:0;background:#1e293b;color:var(--sub);font-weight:400;font-size:10px;text-align:left;padding:7px 9px;z-index:1}
+  td{padding:7px 9px;border-top:1px solid var(--border);color:#cbd5e1}
+  tr.hit td{background:#022c2266;color:var(--green)}
+  tr.miss td .res{color:var(--sub)}
+  td.pl{text-align:right}
+  /* v3: MY LOG */
+  .predli{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border)}
+  .predli:last-child{border:none}
+  .predli .pn{font-size:17px;letter-spacing:.18em;color:#f1f5f9;flex:1}
+  .predli .pr{font-size:10px;color:var(--dim);width:74px}
+  .predli .pm{font-size:9px;color:var(--sub);border:1px solid var(--border);border-radius:99px;padding:2px 7px}
+  .predli .st{font-size:11px;width:96px;text-align:right}
+  .predli .st.hit{color:var(--green);font-weight:700;text-shadow:0 0 12px #34d39988}
+  .predli .st.miss{color:var(--dim)}
+  .predli .st.waiting{color:var(--sub)}
+  .predli .del{background:none;border:none;color:var(--dim);font-size:15px;padding:4px 6px}
+  .fade{animation:fadeIn .28s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media(min-width:600px){.bignum{font-size:56px}.ctrl{grid-template-columns:repeat(4,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1 class="mono">N4<span class="dot">·</span>QUANT <span class="v">web v4</span></h1>
+      <div class="tagline">ナンバーズ4 パリミュチュエル・エッジ分析ターミナル</div>
+    </div>
+    <div class="hmeta mono">
+      <div id="hcount">DATA 0回</div>
+      <div class="t" id="hsync"></div>
+    </div>
+  </header>
+
+  <div class="syncbar">
+    <button class="btn sm" id="syncBtn">↻ データ更新</button>
+    <button class="btn sm ghost" id="exportBtn">書き出し</button>
+    <span class="msg" id="msg"></span>
+  </div>
+
+  <nav>
+    <button data-tab="signal" class="on">シグナル</button>
+    <button data-tab="backtest">バックテスト</button>
+    <button data-tab="mylog">MY LOG</button>
+    <button data-tab="data">データ</button>
+  </nav>
+
+  <main id="main"></main>
+</div>
+
+<script>
+"use strict";
+/* ================= 定数 ================= */
+const LS_DRAWS="n4quant-web-draws", LS_META="n4quant-web-meta", LS_PREDS="n4_preds";
+const PAY_STRAIGHT=900000, PAY_BOX=37500;
+const WARMUP=20, CONF_THRESHOLD=60, TIMEFRAMES=[10,20,50], POS=4;
+const POS_LABEL=["千","百","十","一"];
+const BT_SPAN={ "1y":{n:250,label:"直近1年(約250回)"}, "3y":{n:750,label:"直近3年(約750回)"}, "long":{n:1500,label:"ロング(直近1500回)"} };
+const CAL_WINDOW=2000, CAL_MIN_SAMPLES=300, CAL_EDGES=[0,.1,.2,.3,.4,.55,.7,.85,1.001];
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+const fmtYen=v=>(v<0?"-":"")+"¥"+Math.abs(Math.round(v)).toLocaleString();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const boxKey=n=>n.split("").sort().join("");
+const median=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+
+/* ================= 状態 ================= */
+let draws=[], preds=[], mode="straight", tab="signal", meta={lastSync:null,dataUrl:"data.json",pure:false,mCap:2000};
+let btPeriod="1y", btThr=5, btBet=200;
+try{draws=JSON.parse(localStorage.getItem(LS_DRAWS)||"[]")}catch(e){draws=[]}
+try{preds=JSON.parse(localStorage.getItem(LS_PREDS)||"[]")}catch(e){preds=[]}
+try{meta=Object.assign(meta,JSON.parse(localStorage.getItem(LS_META)||"{}"))}catch(e){}
+if(!meta.dataUrl)meta.dataUrl="data.json";
+if(meta.pure===undefined)meta.pure=false;
+if(!(meta.mCap>0))meta.mCap=2000;
+function saveDraws(){try{localStorage.setItem(LS_DRAWS,JSON.stringify(draws))}catch(e){setMsg("保存に失敗しました(容量超過の可能性)")}}
+function savePreds(){try{localStorage.setItem(LS_PREDS,JSON.stringify(preds))}catch(e){}}
+function saveMeta(){try{localStorage.setItem(LS_META,JSON.stringify(meta))}catch(e){}}
+function setMsg(t){document.getElementById("msg").textContent=t||""}
+
+/* ================= コアロジック ================= */
+function freqAt(ds,end,win){ /* ds[end-win..end-1] の位置別度数(コピーなし) */
+  const s=Math.max(0,end-win);
+  const freq=Array.from({length:POS},()=>Array(10).fill(0));
+  for(let i=s;i<end;i++){const n=ds[i].n;for(let p=0;p<POS;p++)freq[p][+n[p]]++}
+  return freq;
+}
+function digitStats(ds,windowSize){
+  const freq=freqAt(ds,ds.length,windowSize);
+  const gap=Array.from({length:POS},()=>Array(10).fill(ds.length));
+  for(let p=0;p<POS;p++)for(let dg=0;dg<10;dg++)
+    for(let i=ds.length-1;i>=0;i--)
+      if(+ds[i].n[p]===dg){gap[p][dg]=ds.length-1-i;break}
+  return{freq,gap};
+}
+function popularity(num,today){
+  const d=num.split("").map(Number);
+  let s=0.2; const buy=[],fade=[];
+  if(num.startsWith("19")||num.startsWith("20")){s+=0.4;buy.push("西暦型(19**/20**)")}
+  const mm=d[0]*10+d[1],dd=d[2]*10+d[3];
+  if(mm>=1&&mm<=12&&dd>=1&&dd<=31){s+=0.25;buy.push("日付型(MMDD)")}
+  if(d[0]===d[1]&&d[1]===d[2]&&d[2]===d[3]){s+=0.5;buy.push("4桁ゾロ目")}
+  else{const c=Array(10).fill(0);d.forEach(x=>c[x]++);if(c.some(x=>x===3)){s+=0.2;buy.push("トリプル")}}
+  if(d[0]===d[3]&&d[1]===d[2]&&d[0]!==d[1]){s+=0.2;buy.push("左右対称(回文)")}
+  if(d[0]===d[1]&&d[2]===d[3]&&d[0]!==d[2]){s+=0.2;buy.push("ニコイチ(AABB)")}
+  if(d[0]===d[2]&&d[1]===d[3]&&d[0]!==d[1]){s+=0.2;buy.push("ニコイチ(ABAB)")}
+  const asc=d.every((x,i)=>i===0||x===d[i-1]+1), desc=d.every((x,i)=>i===0||x===d[i-1]-1);
+  if(asc||desc){s+=0.3;buy.push("ストレート連番")}
+  const sev=d.filter(x=>x===7).length;
+  if(sev>=2){s+=0.06*sev;buy.push("7を複数含む")}
+  if(d.every(x=>x<=3)){s+=0.08;buy.push("誕生日圏の低位数字のみ")}
+  const av=d.filter(x=>x===4||x===9).length;
+  if(av){s-=0.06*av;fade.push("忌避数字4/9を"+av+"個含む")}
+  if(today){
+    if(today.dateNum&&num===today.dateNum){s+=0.3;buy.push("本日の日付(MMDD)そのもの")}
+    if(today.yearNum&&num===today.yearNum){s+=0.25;buy.push("今年の西暦そのもの")}
+    const ov=d.filter(x=>today.dateDigits.has(String(x))).length;
+    if(ov>=3){s+=0.05*ov;buy.push("本日の日付数字と強く重複")}
+  }
+  return{score:clamp(s,0,1),buy,fade};
+}
+function premiumOf(p){ if(p<=0.7)return clamp(1.5-1.0*p,0.8,1.5); return clamp(0.8-3.0*(p-0.7),0.3,0.8); }
+
+/* ===== 実配当較正(パリミュチュエル・プレミアムの実測化) =====
+   当せん番号は一様ランダム → 実配当は「人気→配当」関数の不偏サンプル。
+   ストレートは ps/90万円、ボックスは順列数で理論値を正規化した pb 比で
+   それぞれ独立に較正する(ボックスは順列がプールを混ぜ、フェードの効きが弱い)。 */
+function perms(num){ /* 4桁の順列数: 全異24 / ワンペア12 / ツーペア6 / トリプル4 / ゾロ目1 */
+  const c={}; num.split("").forEach(x=>c[x]=(c[x]||0)+1);
+  const f=[1,1,2,6,24]; let d=1;
+  Object.values(c).forEach(k=>d*=f[k]);
+  return 24/d;
+}
+let CAL={ready:false,n:0,pts:[],bins:[],bx:{ready:false,n:0,pts:[]}};
+function fitCurve(samp){
+  const bins=[];
+  for(let b=0;b<CAL_EDGES.length-1;b++){
+    const lo=CAL_EDGES[b],hi=CAL_EDGES[b+1];
+    const inb=samp.filter(x=>x.pop>=lo&&x.pop<hi);
+    bins.push({lo,hi,n:inb.length,
+      center:inb.length?inb.reduce((a,x)=>a+x.pop,0)/inb.length:(lo+hi)/2,
+      med:inb.length?median(inb.map(x=>x.prem)):null});
+  }
+  const pts=bins.filter(b=>b.n>=8&&b.med!==null).map(b=>({x:b.center,y:b.med}));
+  return{ready:samp.length>=CAL_MIN_SAMPLES&&pts.length>=3,n:samp.length,pts,bins};
+}
+function buildCalibration(){
+  const sS=[],sB=[];
+  for(let i=Math.max(0,draws.length-CAL_WINDOW);i<draws.length;i++){
+    const d=draws[i];
+    const pop=(d.ps>0||d.pb>0)?popularity(d.n,null).score:0;
+    if(d.ps>0)sS.push({pop,prem:d.ps/PAY_STRAIGHT});
+    if(d.pb>0){
+      const pm=perms(d.n);
+      if(pm>1)sB.push({pop,prem:d.pb/(PAY_BOX*pm)}); /* ゾロ目(box不成立)は除外 */
+    }
+  }
+  const st=fitCurve(sS), bx=fitCurve(sB);
+  CAL={ready:st.ready,n:st.n,pts:st.pts,bins:st.bins,bx:{ready:bx.ready,n:bx.n,pts:bx.pts}};
+}
+function calPremium(p,pts){
+  /* 実測レンジ外は「最寄り実測点の水準×モデル形状比」で外挿
+     (高人気域は標本が薄いため、急落形状はモデルから借りて水準は実測に合わせる) */
+  if(p<pts[0].x)return pts[0].y*(premiumOf(p)/Math.max(premiumOf(pts[0].x),0.01));
+  if(p>pts[pts.length-1].x){
+    const last=pts[pts.length-1];
+    return last.y*(premiumOf(p)/Math.max(premiumOf(last.x),0.01));
+  }
+  for(let i=0;i<pts.length-1;i++){
+    if(p>=pts[i].x&&p<=pts[i+1].x){
+      const t=(p-pts[i].x)/(pts[i+1].x-pts[i].x||1);
+      return pts[i].y+(pts[i+1].y-pts[i].y)*t;
+    }
+  }
+  return pts[pts.length-1].y;
+}
+function premiumEff(p,md){
+  if(md==="box"){
+    if(CAL.bx.ready)return clamp(calPremium(p,CAL.bx.pts),0.1,3.5);
+    if(CAL.ready)return clamp(1+(calPremium(p,CAL.pts)-1)*0.5,0.1,3.5); /* 近似: boxはフェード効果が約半減 */
+    return premiumOf(p);
+  }
+  return CAL.ready?clamp(calPremium(p,CAL.pts),0.1,3.5):premiumOf(p);
+}
+
+function todayBias(now=new Date()){
+  const m=now.getMonth()+1,d=now.getDate(),y=now.getFullYear();
+  let s=0.45; const notes=[];
+  const dateNum=String(m).padStart(2,"0")+String(d).padStart(2,"0");
+  const yearNum=String(y);
+  notes.push("本日 "+m+"/"+d+" は「"+dateNum+"」として日付買いが集中");
+  notes.push("今年の西暦「"+yearNum+"」も恒常的な人気番号");
+  if(d<=12){s+=0.12;notes.push("日が12以下: 月日反転(DDMM)の重複買いも増加")}
+  if(m===d){s+=0.13;notes.push("月日ゾロ日: 記念日購買がさらに集中")}
+  return{strength:clamp(s,0,1),dateDigits:new Set(dateNum.split("")),dateNum,yearNum,notes,label:m+"/"+d};
+}
+function momentumAt(ds,endIdx,look){
+  const win=Math.max(8,Math.round(look/2));
+  if(endIdx<win+5)return null;
+  const start=Math.max(win,endIdx-look);
+  let hits=0,total=0;
+  for(let i=start;i<endIdx;i++){
+    const freq=freqAt(ds,i,win);
+    for(let p=0;p<POS;p++){
+      const ranked=freq[p].map((f,dg)=>({f,dg})).sort((a,b)=>b.f-a.f);
+      const hot=new Set(ranked.slice(0,3).map(x=>x.dg));
+      if(hot.has(+ds[i].n[p]))hits++;
+      total++;
+    }
+  }
+  const obs=total?hits/total:0.3;
+  return{m:clamp((obs-0.3)/0.3,-1,1),samples:total,look};
+}
+function detectRegimeMTF(ds,endIdx){
+  const e=endIdx===undefined?ds.length:endIdx;
+  const tfs=TIMEFRAMES.map(l=>momentumAt(ds,e,l)).filter(Boolean);
+  if(!tfs.length)return{composite:0,tfs:[],agreement:0};
+  const wsum=tfs.reduce((a,t)=>a+Math.sqrt(t.samples),0);
+  const composite=clamp(tfs.reduce((a,t)=>a+t.m*Math.sqrt(t.samples),0)/wsum,-1,1);
+  const mean=tfs.reduce((a,t)=>a+t.m,0)/tfs.length;
+  const va=tfs.reduce((a,t)=>a+(t.m-mean)**2,0)/tfs.length;
+  return{composite,tfs,agreement:clamp(1-Math.sqrt(va)*1.5,0,1)};
+}
+function lowEntropy(ds,n=20){
+  const w=ds.slice(-n); if(w.length<10)return 0;
+  const HMAX=Math.log2(10);
+  const g=Array(10).fill(0);
+  w.forEach(d=>d.n.split("").forEach(x=>g[+x]++));
+  const gt=w.length*POS;
+  const Hg=-g.reduce((a,x)=>{const p=x/gt;return a+(p>0?p*Math.log2(p):0)},0);
+  const glo=clamp((1-Hg/HMAX)*5,0,1);
+  let ps=0;
+  for(let p=0;p<POS;p++){
+    const c=Array(10).fill(0);
+    w.forEach(d=>c[+d.n[p]]++);
+    const Hp=-c.reduce((a,x)=>{const q=x/w.length;return a+(q>0?q*Math.log2(q):0)},0);
+    ps+=clamp((1-Hp/HMAX)*3,0,1);
+  }
+  return clamp(glo*0.5+(ps/POS)*0.5,0,1);
+}
+function predict(ds,today){
+  const regime=detectRegimeMTF(ds);
+  const wHot=clamp(0.5+0.4*regime.composite,0.1,0.9);
+  const sw=Math.min(20,Math.max(10,Math.floor(ds.length/3)));
+  const{freq,gap}=digitStats(ds,sw);
+  const positions=[];
+  for(let p=0;p<POS;p++){
+    const mF=Math.max(...freq[p],1),mG=Math.max(...gap[p],1);
+    positions.push(freq[p].map((f,dg)=>({dg,score:wHot*(f/mF)+(1-wHot)*(gap[p][dg]/mG)})).sort((a,b)=>b.score-a.score));
+  }
+  /* v4: 効用は実測較正プレミアム(premiumEff)を直接最大化する。
+     ピュアモードでは統計スコアを無効化し探索幅を4に拡大(256通り)。 */
+  const topN=meta.pure?4:3, wStat=meta.pure?0:0.4;
+  const combos=[];
+  for(const a of positions[0].slice(0,topN))
+  for(const b of positions[1].slice(0,topN))
+  for(const c of positions[2].slice(0,topN))
+  for(const e of positions[3].slice(0,topN)){
+    const num=""+a.dg+b.dg+c.dg+e.dg;
+    const stat=(a.score+b.score+c.score+e.score)/POS;
+    const pop=popularity(num,today);
+    const prem=premiumEff(pop.score);
+    combos.push({num,stat,pop,prem,utility:stat*wStat+clamp(prem/1.5,0,1)*(1-wStat)});
+  }
+  combos.sort((x,y)=>y.utility-x.utility);
+  const best=combos[0];
+  return{digits:best.num,pop:best.pop,premium:best.prem,positions,regime,wHot,
+    gapScore:combos.length>1?best.utility-combos[1].utility:0};
+}
+function confidenceScore(ds,pred,today){
+  if(ds.length<WARMUP)return{score:30,parts:null};
+  /* v4: 配当に実際に効く要素で判定を駆動。統計シグナルは「参考」15点に格下げ */
+  const premEdge=clamp((pred.premium-0.6)/0.9,0,1)*55;
+  let dateEdge=0;
+  if(today){
+    const avoid=pred.digits.split("").filter(x=>!today.dateDigits.has(x)).length;
+    dateEdge=today.strength*(avoid/POS)*25;
+  }
+  const statRef=clamp(lowEntropy(ds)*6
+    +pred.regime.agreement*Math.abs(pred.regime.composite)*6
+    +clamp(pred.gapScore*40,0,1)*3,0,15);
+  const score=Math.round(clamp(5+premEdge+dateEdge+statRef,5,95));
+  return{score,parts:{premEdge,dateEdge,statRef}};
+}
+
+/* ================= バックテスト(v3: キャッシュ+フィルタ分離) ================= */
+let BT={key:"",rows:[]};
+function computeBTRows(period){
+  const span=BT_SPAN[period].n;
+  const key=period+":"+draws.length+":"+(draws.length?draws[draws.length-1].r:0)+":"+(meta.pure?1:0);
+  if(BT.key===key)return BT.rows;
+  const sub=draws.slice(-(span+WARMUP));
+  const rows=[];
+  for(let i=WARMUP;i<sub.length;i++){
+    const hist=sub.slice(0,i);
+    const act=sub[i];
+    const today=act.d?todayBias(new Date(act.d+"T12:00:00")):null;
+    const pred=predict(hist,today);
+    const conf=confidenceScore(hist,pred,today).score;
+    const st=pred.digits===act.n;
+    const bx=boxKey(pred.digits)===boxKey(act.n);
+    rows.push({r:act.r,d:act.d,num:pred.digits,act:act.n,st,bx,conf,
+      popS:pred.pop.score,ps:act.ps||0,pb:act.pb||0});
+  }
+  BT={key,rows};
+  return rows;
+}
+function aggBT(rows,md,thr,bet){
+  const base=md==="straight"?PAY_STRAIGHT:PAY_BOX;
+  const f=bet/200; /* 実配当は200円1口あたり */
+  const eq=[],trades=[];
+  let cost=0,rF=0,rA=0,sH=0,bH=0,realCnt=0;
+  let peak=0,maxDD=0,streak=0,maxStreak=0,expHits=0;
+  for(const t of rows){
+    if(t.conf<thr)continue;
+    cost+=bet;
+    expHits+=(md==="straight"?1:perms(t.num))/10000;
+    const hit=md==="straight"?t.st:t.bx;
+    let pf=0,pa=0;
+    if(hit){
+      if(md==="straight")sH++; else bH++;
+      pf=base*f;
+      const real=md==="straight"?t.ps:t.pb;
+      if(real>0){pa=real*f;realCnt++}
+      else pa=Math.round(base*premiumEff(t.popS,md))*f;
+      streak=0;
+    }else{
+      streak++; if(streak>maxStreak)maxStreak=streak;
+    }
+    rF+=pf;rA+=pa;
+    const eqa=rA-cost;
+    if(eqa>peak)peak=eqa;
+    if(peak-eqa>maxDD)maxDD=peak-eqa;
+    trades.push(Object.assign({},t,{hit,pl:pa-bet}));
+    eq.push({r:t.r,eqFixed:rF-cost,eqAdj:eqa});
+  }
+  return{eq,trades,cost,retFixed:rF,retAdj:rA,sHits:sH,bHits:bH,realCnt,
+    maxDD,maxStreak,expHits,
+    roiFixed:cost?rF/cost*100:0,roiAdj:cost?rA/cost*100:0};
+}
+
+/* ================= MY LOG(予実管理) ================= */
+function gradePreds(){
+  if(!preds.length)return 0;
+  const map=new Map(draws.map(d=>[d.r,d]));
+  let changed=0;
+  preds.forEach(p=>{
+    if(p.status!=="waiting")return;
+    const d=map.get(p.round);
+    if(!d)return;
+    const st=p.predicted===d.n;
+    const bx=boxKey(p.predicted)===boxKey(d.n);
+    const hit=p.mode==="straight"?st:bx;
+    p.status=hit?"hit":"miss";
+    p.result=d.n;
+    p.payout=hit?(p.mode==="straight"?(d.ps||PAY_STRAIGHT):(d.pb||PAY_BOX)):0;
+    changed++;
+  });
+  if(changed)savePreds();
+  return changed;
+}
+
+/* ================= データ操作 ================= */
+function normRec(x){
+  const r=Number(x.round!==undefined?x.round:x.r);
+  const n=String(x.number!==undefined?x.number:x.n).padStart(4,"0");
+  const rec={r,n,d:x.date||x.d||null};
+  const ps=Number(x.ps!==undefined?x.ps:(x.prize&&x.prize.straight));
+  const pb=Number(x.pb!==undefined?x.pb:(x.prize&&x.prize.box));
+  if(ps>0)rec.ps=ps;
+  if(pb>0)rec.pb=pb;
+  return rec;
+}
+function mergeDraws(incoming){
+  const map=new Map(draws.map(x=>[x.r,x]));
+  let added=0;
+  incoming.forEach(x=>{
+    const cur=map.get(x.r);
+    if(!cur){map.set(x.r,x);added++}
+    else{ /* 既存優先だが欠損フィールドは補完 */
+      const upd=Object.assign({},cur);
+      if(x.d&&!cur.d)upd.d=x.d;
+      if(x.ps>0&&!(cur.ps>0))upd.ps=x.ps;
+      if(x.pb>0&&!(cur.pb>0))upd.pb=x.pb;
+      map.set(x.r,upd);
+    }
+  });
+  draws=[...map.values()].sort((a,b)=>a.r-b.r);
+  saveDraws();
+  buildCalibration();
+  const graded=gradePreds();
+  if(graded)setTimeout(()=>setMsg("マイ予想 "+graded+"件を自動答え合わせしました"),50);
+  return added;
+}
+async function syncRemote(){
+  if(!meta.dataUrl){setMsg("データソースURL未設定です(「データ」タブで設定)");renderTab("data");return}
+  const btn=document.getElementById("syncBtn");
+  btn.disabled=true;btn.textContent="同期中…";setMsg("");
+  try{
+    const res=await fetch(meta.dataUrl,{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const arr=await res.json();
+    const inc=(Array.isArray(arr)?arr:[]).map(normRec)
+      .filter(x=>Number.isInteger(x.r)&&/^\d{4}$/.test(x.n));
+    const added=mergeDraws(inc);
+    meta.lastSync=Date.now();saveMeta();
+    setMsg(added?("同期完了: "+added+"回分を新規追加"):"同期完了: 新規なし");
+  }catch(e){
+    setMsg("取得失敗: "+e.message+"(URLとCORS設定を確認)");
+  }finally{
+    btn.disabled=false;btn.textContent="↻ データ更新";render();
+  }
+}
+function exportJson(){
+  const payload={app:"n4quant",version:3,exportedAt:new Date().toISOString(),draws,preds};
+  const blob=new Blob([JSON.stringify(payload,null,1)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="n4quant-backup.json";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),3000);
+}
+function importJsonFile(file){
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const obj=JSON.parse(rd.result);
+      const drawsArr=Array.isArray(obj)?obj:(obj.draws||[]);
+      const inc=drawsArr.map(normRec).filter(x=>Number.isInteger(x.r)&&/^\d{4}$/.test(x.n));
+      const added=mergeDraws(inc);
+      let pAdded=0;
+      if(obj.preds&&Array.isArray(obj.preds)){
+        const seen=new Set(preds.map(p=>p.round+":"+p.predicted+":"+p.mode+":"+p.createdAt));
+        obj.preds.forEach(p=>{
+          const k=p.round+":"+p.predicted+":"+p.mode+":"+p.createdAt;
+          if(!seen.has(k)&&/^\d{4}$/.test(String(p.predicted))){preds.push(p);seen.add(k);pAdded++}
+        });
+        if(pAdded){savePreds();gradePreds()}
+      }
+      setMsg("復元: 当せん"+added+"件 / マイ予想"+pAdded+"件");render();
+    }catch(e){setMsg("JSONの読み込みに失敗しました")}
+  };
+  rd.readAsText(file);
+}
+function importBulk(text){
+  const lines=text.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+  const parsed=[];
+  let autoR=draws.length?Math.max(...draws.map(x=>x.r))+1:1;
+  for(const line of lines){
+    const full=line.match(/(\d{3,5})[^\d]+(\d{4})(?:[^\d]+(\d{4}-\d{2}-\d{2}))?/);
+    if(full){parsed.push({r:+full[1],n:full[2],d:full[3]||null});continue}
+    const only=line.match(/^(\d{4})$/);
+    if(only)parsed.push({r:autoR++,n:only[1],d:null});
+  }
+  if(!parsed.length){setMsg("解釈できる行がありません(例: 6800,1234 または 1234)");return}
+  const added=mergeDraws(parsed);
+  setMsg(added+"回分をインポートしました");
+  render();
+}
+function genDemo(){
+  draws=Array.from({length:200},(_,i)=>{
+    const n=String(Math.floor(Math.random()*10000)).padStart(4,"0");
+    const pop=popularity(n,null).score;
+    const ps=Math.round(PAY_STRAIGHT*premiumOf(pop)*(0.75+0.5*Math.random()));
+    return{r:i+1,n,d:null,ps,pb:Math.round(ps/16)};
+  });
+  saveDraws();buildCalibration();setMsg("デモデータ200回分を生成しました(擬似配当つき)");render();
+}
+
+/* ================= 描画部品 ================= */
+function gaugeHtml(m,color){
+  const left=m>=0?50:50+m*50, w=Math.abs(m)*50;
+  return '<div class="gauge"><span class="mid"></span><i style="left:'+left+'%;width:'+w+'%;background:var(--'+color+')"></i></div>';
+}
+const EQ={W:700,H:210,PAD:10};
+function equitySvg(eq){
+  if(!eq.length)return{html:'<p class="note">フィルター条件を満たすトレードがありません。閾値を下げてください。</p>',geo:null};
+  const{W,H,PAD}=EQ;
+  const vals=eq.flatMap(r=>[r.eqFixed,r.eqAdj]);
+  let lo=Math.min(0,...vals),hi=Math.max(0,...vals);
+  if(hi===lo)hi=lo+1;
+  const X=i=>PAD+(W-2*PAD)*(eq.length===1?0.5:i/(eq.length-1));
+  const Y=v=>H-PAD-(H-2*PAD)*((v-lo)/(hi-lo));
+  const line=key=>eq.map((r,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(r[key]).toFixed(1)).join(" ");
+  const html='<div class="eqwrap" id="eqwrap">'
+    +'<svg id="eqsvg" viewBox="0 0 '+W+' '+H+'" width="100%" height="210" preserveAspectRatio="none">'
+    +'<line x1="0" x2="'+W+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="#475569" stroke-dasharray="5 5" stroke-width="1"/>'
+    +'<path d="'+line("eqFixed")+'" fill="none" stroke="#64748b" stroke-width="1.4"/>'
+    +'<path d="'+line("eqAdj")+'" fill="none" stroke="#e63946" stroke-width="2.2"/>'
+    +'<line id="eqcur" x1="-10" x2="-10" y1="0" y2="'+H+'" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>'
+    +'<circle id="eqdot" cx="-10" cy="-10" r="4" fill="#e63946" stroke="#fff" stroke-width="1.2"/>'
+    +'</svg><div class="ttip mono" id="eqtip"></div></div>'
+    +'<div class="legend"><span><i style="background:#e63946"></i>実配当/較正ベース</span><span><i style="background:#64748b"></i>固定配当(理論値)</span></div>';
+  return{html,geo:{X,Y,lo,hi}};
+}
+function bindEquityHover(eq,geo){
+  const wrap=document.getElementById("eqwrap");
+  if(!wrap||!geo||!eq.length)return;
+  const svg=document.getElementById("eqsvg"),tip=document.getElementById("eqtip"),
+        cur=document.getElementById("eqcur"),dot=document.getElementById("eqdot");
+  const move=ev=>{
+    const rect=svg.getBoundingClientRect();
+    const cx=(ev.touches?ev.touches[0].clientX:ev.clientX)-rect.left;
+    const frac=clamp((cx/rect.width*EQ.W-EQ.PAD)/(EQ.W-2*EQ.PAD),0,1);
+    const idx=Math.round(frac*(eq.length-1));
+    const p=eq[idx];
+    const px=geo.X(idx),py=geo.Y(p.eqAdj);
+    cur.setAttribute("x1",px);cur.setAttribute("x2",px);
+    dot.setAttribute("cx",px);dot.setAttribute("cy",py);
+    tip.innerHTML='<span class="tr">第'+p.r+'回</span><br>累積 <b style="color:var(--'+(p.eqAdj>=0?"green":"rose")+')">'+fmtYen(p.eqAdj)+'</b>';
+    tip.style.left=(px/EQ.W*100)+"%";
+    tip.style.top=(py/EQ.H*100)+"%";
+    tip.classList.add("show");
+  };
+  const leave=()=>{tip.classList.remove("show");cur.setAttribute("x1",-10);cur.setAttribute("x2",-10);dot.setAttribute("cx",-10)};
+  wrap.addEventListener("pointermove",move);
+  wrap.addEventListener("pointerdown",move);
+  wrap.addEventListener("pointerleave",leave);
+}
+function calSvg(){
+  const W=700,H=190,PAD=26;
+  const X=p=>PAD+(W-2*PAD)*p, Y=v=>H-PAD-(H-2*PAD)*clamp(v/2.5,0,1);
+  let model="";
+  for(let p=0;p<=1.001;p+=0.02)model+=(p===0?"M":"L")+X(p).toFixed(1)+" "+Y(premiumOf(p)).toFixed(1)+" ";
+  let emp="",dots="";
+  if(CAL.pts.length){
+    CAL.pts.forEach((pt,i)=>{emp+=(i===0?"M":"L")+X(pt.x).toFixed(1)+" "+Y(pt.y).toFixed(1)+" "});
+    CAL.bins.forEach(b=>{
+      if(b.n>=8&&b.med!==null)
+        dots+='<circle cx="'+X(b.center).toFixed(1)+'" cy="'+Y(b.med).toFixed(1)+'" r="'+clamp(3+Math.log10(b.n)*2,3,8)+'" fill="#34d399" opacity="0.85"/>';
+    });
+  }
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="190" preserveAspectRatio="none">'
+    +'<line x1="'+PAD+'" x2="'+(W-PAD)+'" y1="'+Y(1)+'" y2="'+Y(1)+'" stroke="#475569" stroke-dasharray="4 4" stroke-width="1"/>'
+    +'<text x="'+(PAD+2)+'" y="'+(Y(1)-5)+'" fill="#64748b" font-size="10">×1.0(理論値90万円)</text>'
+    +'<path d="'+model+'" fill="none" stroke="#64748b" stroke-width="1.4" stroke-dasharray="6 4"/>'
+    +(emp?'<path d="'+emp+'" fill="none" stroke="#34d399" stroke-width="2"/>':"")
+    +dots
+    +'<text x="'+PAD+'" y="'+(H-8)+'" fill="#64748b" font-size="10">← 不人気</text>'
+    +'<text x="'+(W-PAD-58)+'" y="'+(H-8)+'" fill="#64748b" font-size="10">人気番号 →</text>'
+    +'</svg>'
+    +'<div class="legend"><span><i style="background:#34d399"></i>実測(ビン中央値・点の大きさ=標本数)</span><span><i style="background:#64748b"></i>仮置きモデル(旧)</span></div>';
+}
+function freqBars(){
+  const counts=Array.from({length:10},(_,dg)=>draws.reduce((a,d)=>a+d.n.split("").filter(x=>+x===dg).length,0));
+  const max=Math.max(...counts,1);
+  return '<div class="bars">'+counts.map((c,dg)=>'<div class="b"><i style="height:'+(c/max*100)+'%"></i><span class="mono">'+dg+'</span></div>').join("")+'</div>';
+}
+
+function monthSpend(){
+  const now=new Date(),y=now.getFullYear(),m=now.getMonth();
+  return preds.filter(p=>{const d=new Date(p.createdAt);return d.getFullYear()===y&&d.getMonth()===m}).length*200;
+}
+/* ================= タブ: シグナル ================= */
+function renderSignal(){
+  const today=todayBias();
+  if(draws.length<15){
+    return '<div class="card empty"><p>分析には15回分以上のデータが必要です(現在 '+draws.length+'回)。<br>「データ」タブの一括インポートで過去の当せん番号を貼り付けるか、データソースURLを設定して同期してください。</p>'
+      +'<button class="btn" id="demoBtn2">デモデータで試す</button></div>';
+  }
+  const pred=predict(draws,today);
+  const conf=confidenceScore(draws,pred,today);
+  const reg=pred.regime, isT=reg.composite>=0;
+  const wait=conf.score<CONF_THRESHOLD;
+  let h="";
+  h+='<div class="card"><h3><span>相場環境認識（マルチタイムフレーム）</span><span class="mono">整合性 '+(reg.agreement*100).toFixed(0)+'%</span></h3>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    +'<b style="color:var(--'+(isT?"amber":"sky")+');font-size:14px">'+(isT?"トレンド相場（順張り・ホット重視）":"調整相場（逆張り・コールド重視）")+'</b>'
+    +'<span class="mono" style="color:#94a3b8;font-size:13px">合成M '+(reg.composite>=0?"+":"")+reg.composite.toFixed(2)+'</span></div>';
+  reg.tfs.forEach(t=>{
+    h+='<div class="tfrow"><span class="lab mono">'+(t.look===10?"短期":t.look===20?"中期":"長期")+' '+t.look+'回</span>'
+      +gaugeHtml(t.m,t.m>=0?"amber":"sky")
+      +'<span class="val mono">'+(t.m>=0?"+":"")+t.m.toFixed(2)+'</span></div>';
+  });
+  h+='<div style="font-size:11px;color:var(--sub);margin-top:9px" class="mono">Hot重み '+Math.round(pred.wHot*100)+'% / Cold重み '+Math.round((1-pred.wHot)*100)+'%</div></div>';
+  h+='<div class="card"><h3><span>推奨番号（統計スコア × 不人気EVの81通り最適化）</span>'
+    +((meta.pure?'<span class="tag amber" style="font-size:9px">PUREモード</span> ':'')+(CAL.ready?'<span class="tag green" style="font-size:9px">実測較正 n='+CAL.n+'</span>':'<span class="tag amber" style="font-size:9px">モデル値(較正待ち)</span>'))+'</h3>'
+    +'<div style="display:flex;justify-content:space-between;align-items:center">'
+    +'<div class="bignum mono">'+pred.digits+'</div>'
+    +'<div><div class="premium mono" style="color:var(--'+(pred.premium>=1?"amber":"rose")+')">×'+pred.premium.toFixed(2)+'</div><div class="plabel">'+(CAL.ready?"実測配当プレミアム":"予想配当プレミアム")+'</div></div></div>'
+    +'<div class="tags">'
+    +(pred.pop.buy.length===0?'<span class="tag green">大衆人気パターンなし（配当上振れ期待）</span>':"")
+    +pred.pop.buy.map(t=>'<span class="tag rose">人気要因: '+esc(t)+'</span>').join("")
+    +pred.pop.fade.map(t=>'<span class="tag green">'+esc(t)+'</span>').join("")
+    +'</div><div class="grid4" style="margin-top:12px">';
+  pred.positions.forEach((s,p)=>{
+    h+='<div class="poscard"><div class="pl">'+POS_LABEL[p]+'の位</div>';
+    s.slice(0,3).forEach((x,i)=>{h+='<div class="r mono"><span class="'+(i===0?"d1":"dn")+'">'+x.dg+'</span><span class="sc">'+x.score.toFixed(2)+'</span></div>'});
+    h+='</div>';
+  });
+  h+='</div>'
+    +'<div class="row" style="margin-top:12px"><button class="btn sm ghost" id="toMylogBtn">この番号をMY LOGに登録 →</button></div></div>';
+  h+='<div class="card"><h3><span>本日（'+today.label+'）の大衆バイアス強度</span><span class="mono">'+(today.strength*100).toFixed(0)+'%</span></h3>'
+    +'<div class="gauge"><i style="left:0;width:'+(today.strength*100)+'%;background:var(--violet)"></i></div>'
+    +'<ul class="biaslist">'+today.notes.map(n=>'<li>・'+esc(n)+'</li>').join("")+'</ul></div>';
+  h+='<div class="card"><h3><span>オッズ歪み期待度（コンフィデンス）</span><span class="mono" style="font-size:22px;color:var(--'+(wait?"rose":"green")+')">'+conf.score+'<small style="font-size:11px;color:var(--sub)">%</small></span></h3>'
+    +'<div class="gauge"><i style="left:0;width:'+conf.score+'%;background:var(--'+(wait?"red":"green")+')"></i></div>';
+  if(conf.parts){
+    const P=(lab,v,max,main)=>'<div class="part"><span class="lab'+(main?" main":"")+'">'+lab+'</span><span class="bar"><i class="'+(main?"main":"")+'" style="width:'+clamp(v/max*100,0,100)+'%"></i></span><span class="num mono">'+v.toFixed(1)+'/'+max+'</span></div>';
+    h+='<div style="margin-top:10px">'
+      +P("配当プレミアム期待（実測較正）",conf.parts.premEdge,55,true)
+      +P("日付バイアス回避エッジ",conf.parts.dateEdge,25)
+      +P("統計シグナル（※参考・確率には無関係）",conf.parts.statRef,15)
+      +'</div>';
+  }
+  h+='</div>';
+  const spent=monthSpend();
+  if(spent>=meta.mCap){
+    h+='<div class="alert wait"><div class="h mono">🛑 STOP — 今月の上限（'+fmtYen(meta.mCap)+'）に到達</div>'
+      +'<p>今月の登録は'+fmtYen(spent)+'相当。プロのデスクと同じで、リミット到達後の追加投入は禁止です。来月まではMY LOGへの記録のみ（上限はデータタブで変更可）。</p></div>';
+  }else if(wait){
+    h+='<div class="alert wait"><div class="h mono">⏸ WAIT — 本日は【見送り（ペーパー・トレード）】を推奨</div>'
+      +'<p>オッズ歪み期待度 '+conf.score+'% ＜ 閾値 '+CONF_THRESHOLD+'%。実弾を投じず、MY LOGへの記録のみに留めてください。</p></div>';
+  }else{
+    h+='<div class="alert go"><div class="h mono">▶ ENTRY 条件クリア（歪み妙味あり）</div>'
+      +'<p>1回あたりの投入は定額200円・総資金の1%以下を厳守。今月の残り枠: '+fmtYen(meta.mCap-spent)+'</p></div>';
+  }
+  return h;
+}
+
+/* ================= タブ: バックテスト(v3) ================= */
+function renderBacktest(){
+  if(draws.length<=WARMUP+5){
+    return '<div class="card empty"><p>バックテストには'+(WARMUP+6)+'回分以上のデータが必要です(現在 '+draws.length+'回)。</p></div>';
+  }
+  let h='<div class="modebtns">'
+    +'<button data-mode="straight" class="'+(mode==="straight"?"on":"")+'">ストレート</button>'
+    +'<button data-mode="box" class="'+(mode==="box"?"on":"")+'">ボックス</button></div>';
+  h+='<div class="ctrl">'
+    +'<div class="cbox"><div class="cl">検証期間</div><select id="btPeriod">'
+    +Object.entries(BT_SPAN).map(([k,v])=>'<option value="'+k+'"'+(btPeriod===k?" selected":"")+'>'+v.label+'</option>').join("")
+    +'</select></div>'
+    +'<div class="cbox"><div class="cl"><span>自信度フィルター</span><b class="mono" id="thrVal">'+btThr+'%</b></div>'
+    +'<input type="range" id="btThr" min="5" max="95" step="1" value="'+btThr+'"></div>'
+    +'<div class="cbox"><div class="cl">BET金額(円/回)</div><input type="number" id="btBet" inputmode="numeric" min="100" step="100" value="'+btBet+'"></div>'
+    +'<div class="cbox"><div class="cl">計算状況</div><div class="mono" id="btStatus" style="font-size:12px;color:var(--sub)">—</div></div>'
+    +'</div>';
+  h+='<div id="btBody"></div>';
+  return h;
+}
+function renderBTBody(){
+  const body=document.getElementById("btBody");
+  if(!body)return;
+  const status=document.getElementById("btStatus");
+  if(status)status.textContent="計算中…";
+  setTimeout(()=>{
+    const t0=performance.now();
+    const rows=computeBTRows(btPeriod);
+    const agg=aggBT(rows,mode,btThr,btBet);
+    const ms=Math.round(performance.now()-t0);
+    if(status)status.textContent=rows.length+"回を評価 / "+ms+"ms";
+    let h='<div class="grid2 fade" style="margin-bottom:14px">'
+      +'<div class="stat"><div class="l">回収率（'+(agg.realCnt?"実配当ベース":"較正/モデル配当")+'）</div><div class="v mono" style="color:var(--'+(agg.roiAdj>=100?"green":"rose")+')">'+agg.roiAdj.toFixed(1)+'%</div></div>'
+      +'<div class="stat"><div class="l">回収率（固定配当・理論値）</div><div class="v mono">'+agg.roiFixed.toFixed(1)+'%</div></div>'
+      +'<div class="stat"><div class="l">パリミュチュエル寄与</div><div class="v mono" style="color:var(--amber)">'+(agg.roiAdj-agg.roiFixed>=0?"+":"")+(agg.roiAdj-agg.roiFixed).toFixed(1)+' pt</div></div>'
+      +'<div class="stat"><div class="l">BET数 / 的中</div><div class="v mono">'+agg.trades.length+'回 / '+(mode==="straight"?"ST "+agg.sHits:"BOX "+agg.bHits)+'</div></div></div>';
+    h+='<div class="grid2 fade" style="margin-bottom:14px">'
+      +'<div class="stat"><div class="l">最大ドローダウン（資金の谷）</div><div class="v mono" style="color:var(--rose)">'+fmtYen(agg.maxDD)+'</div></div>'
+      +'<div class="stat"><div class="l">最長連敗</div><div class="v mono">'+agg.maxStreak+'<small style="font-size:11px;color:var(--sub)">連敗</small></div></div>'
+      +'<div class="stat"><div class="l">理論期待的中数（この条件で）</div><div class="v mono">'+agg.expHits.toFixed(2)+'<small style="font-size:11px;color:var(--sub)">回</small></div></div>'
+      +'<div class="stat"><div class="l">実際の的中 vs 期待</div><div class="v mono" style="color:var(--'+((mode==="straight"?agg.sHits:agg.bHits)>=agg.expHits?"green":"sub")+')">'+(mode==="straight"?agg.sHits:agg.bHits)+' vs '+agg.expHits.toFixed(1)+'</div></div></div>';
+    const eqr=equitySvg(agg.eq);
+    h+='<div class="card fade"><h3><span>エクイティカーブ（累積損益）</span><span class="mono">総投資 '+fmtYen(agg.cost)+'</span></h3>'+eqr.html+'</div>';
+    /* トレード履歴 */
+    const recent=agg.trades.slice(-30).reverse();
+    h+='<div class="card fade"><h3><span>トレード履歴（フィルター通過・直近30件）</span></h3>';
+    if(!recent.length){h+='<p class="note">条件を満たすトレードがありません。</p>'}
+    else{
+      h+='<div class="tblwrap"><table><thead><tr><th>回号</th><th>予測</th><th>結果</th><th>判定</th><th style="text-align:right">損益</th></tr></thead><tbody>';
+      recent.forEach(t=>{
+        const judge=t.st?"ストレート的中":(t.bx?"ボックス的中":"不的中");
+        h+='<tr class="'+(t.hit?"hit":"miss")+' mono"><td>'+t.r+'</td><td style="letter-spacing:.15em">'+t.num+'</td><td style="letter-spacing:.15em" class="res">'+t.act+'</td><td>'+judge+'</td><td class="pl" style="color:var(--'+(t.pl>=0?"green":"sub")+')">'+fmtYen(t.pl)+'</td></tr>';
+      });
+      h+='</tbody></table></div>';
+    }
+    h+='</div>';
+    /* 較正カード */
+    h+='<div class="card fade"><h3><span>配当プレミアム較正（実測 vs 仮置きモデル）</span>'
+      +(CAL.ready?'<span class="tag green" style="font-size:9px">較正有効 n='+CAL.n+'</span>':'<span class="tag amber" style="font-size:9px">標本不足(n='+CAL.n+'/'+CAL_MIN_SAMPLES+') — モデル値で代替中</span>')
+      +'</h3>'+calSvg()
+      +'<p class="note" style="margin:8px 0 0">当せん番号は一様ランダムに発生するため、その実配当は「番号人気→配当」関数の不偏サンプルです。直近'+CAL_WINDOW+'回のうち実配当が取得できた'+CAL.n+'回を人気スコアでビン分割し、実測プレミアム(実配当÷理論値90万円)の中央値でカーブを構築しています。的中時の損益計算は【実配当そのもの】を最優先で使用します。</p></div>';
+    h+='<p class="note">※ 抽選確率そのものは操作不能であり、本ツールは控除率55%を上回る期待値を保証しません。長期の理論回収率は約45%に収束します。実質的な価値はWAIT判定と定額投入による資金管理の規律にあります。</p>';
+    body.innerHTML=h;
+    bindEquityHover(agg.eq,eqr.geo);
+  },20);
+}
+
+/* ================= タブ: MY LOG(v3新設) ================= */
+function renderMylog(){
+  const graded=preds.filter(p=>p.status!=="waiting");
+  const hits=graded.filter(p=>p.status==="hit");
+  const rate=graded.length?hits.length/graded.length*100:0;
+  const pnl=graded.reduce((a,p)=>a+(p.payout||0),0)-graded.length*200;
+  const nextR=draws.length?Math.max(...draws.map(x=>x.r))+1:1;
+  let h='<div class="grid3" style="margin-bottom:14px">'
+    +'<div class="stat"><div class="l">累計予想</div><div class="v mono">'+preds.length+'<small style="font-size:11px;color:var(--sub)">回</small></div></div>'
+    +'<div class="stat"><div class="l">的中率(確定分)</div><div class="v mono" style="color:var(--'+(rate>0?"green":"txt")+')">'+rate.toFixed(1)+'%</div></div>'
+    +'<div class="stat"><div class="l">累計収支(200円/回)</div><div class="v mono" style="color:var(--'+(pnl>=0?"green":"rose")+')">'+fmtYen(pnl)+'</div></div></div>';
+  const spent=monthSpend();
+  const pct=clamp(spent/meta.mCap*100,0,100);
+  h+='<div class="card"><h3><span>今月の予算（登録1件=200円換算）</span><span class="mono">'+fmtYen(spent)+' / '+fmtYen(meta.mCap)+'</span></h3>'
+    +'<div class="gauge"><i style="left:0;width:'+pct+'%;background:var(--'+(pct>=100?"red":pct>=70?"amber":"green")+')"></i></div>'
+    +(pct>=100?'<p class="note" style="margin:8px 0 0;color:var(--rose)">上限到達。今月は記録のみにしましょう(上限変更はデータタブ)。</p>':"")
+    +'</div>';
+  h+='<div class="card"><h3>マイ予想を登録（次回: 第'+nextR+'回）</h3>'
+    +'<div class="row"><div style="flex:1"><label class="flabel">回号</label><input type="number" id="predRound" inputmode="numeric" value="'+nextR+'"></div>'
+    +'<div style="flex:1"><label class="flabel">予想番号(4桁)</label><input type="text" id="predNum" inputmode="numeric" maxlength="4" placeholder="0576"></div></div>'
+    +'<div class="modebtns" style="margin:10px 0"><button id="pmS" class="'+(predMode==="straight"?"on":"")+'">ストレート狙い</button><button id="pmB" class="'+(predMode==="box"?"on":"")+'">ボックス狙い</button></div>'
+    +'<button class="btn" id="predAddBtn" style="width:100%">マイ予想に登録</button>'
+    +'<p class="note" style="margin:8px 0 0">当せんデータが同期されると自動で答え合わせされます。収支は的中時にその回の実配当(取得済みの場合)を加算します。</p></div>';
+  h+='<div class="card"><h3><span>予想ログ</span><span>'+(preds.filter(p=>p.status==="waiting").length)+'件 抽選待ち</span></h3>';
+  if(!preds.length){h+='<div class="empty"><p>まだ予想がありません。シグナルタブの推奨番号から登録するか、上のフォームで自分の予想を登録してください。</p></div>'}
+  else{
+    h+='<div class="list" style="max-height:400px">';
+    [...preds].sort((a,b)=>b.round-a.round||b.createdAt-a.createdAt).forEach((p,idx0)=>{
+      const i=preds.indexOf(p);
+      const stTxt=p.status==="waiting"?"⏳ 抽選待ち":(p.status==="hit"?"◎ 的中 "+fmtYen(p.payout):"✕ "+esc(p.result||""));
+      h+='<div class="predli mono"><span class="pr">第'+p.round+'回</span>'
+        +'<span class="pn">'+esc(p.predicted)+'</span>'
+        +'<span class="pm">'+(p.mode==="straight"?"ST":"BOX")+'</span>'
+        +'<span class="st '+p.status+'">'+stTxt+'</span>'
+        +'<button class="del" data-del="'+i+'">✕</button></div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  h+='<p class="note">※ MY LOGは端末のローカルストレージのみに保存されます。「書き出し」ボタンのバックアップに予想ログも含まれます。</p>';
+  return h;
+}
+let predMode="straight";
+function addPred(round,num,md){
+  if(!/^\d{4}$/.test(num)){setMsg("予想番号は4桁の数字で入力してください");return false}
+  const r=Number(round);
+  if(!Number.isInteger(r)||r<1){setMsg("回号が不正です");return false}
+  const maxR=draws.length?Math.max(...draws.map(x=>x.r)):0;
+  if(r<=maxR){setMsg("第"+r+"回は抽選済みです(次回: 第"+(maxR+1)+"回)");return false}
+  preds.push({round:r,predicted:num,mode:md,status:"waiting",payout:0,result:null,createdAt:Date.now()});
+  savePreds();
+  setMsg("第"+r+"回の予想「"+num+"」を登録しました");
+  return true;
+}
+
+/* ================= タブ: データ ================= */
+function renderData(){
+  const psCount=draws.filter(d=>d.ps>0).length;
+  let h='<div class="card settings"><h3>自動同期（データソースURL）</h3>'
+    +'<p>JSON配列を返すURLを設定すると「↻ データ更新」で取り込めます。形式: <span class="mono">[{"round":6800,"date":"2026-07-10","number":"1234","ps":654400,"pb":54500}]</span>(ps/pb=ストレート/ボックス実配当・省略可)<br>'
+    +'同一リポジトリのGitHub Pagesに置かれている場合は相対パス「data.json」のままでOKです(同一オリジンのためCORS不要)。</p>'
+    +'<label class="flabel">データソースURL</label>'
+    +'<input type="text" id="dataUrl" placeholder="https://〇〇.github.io/n4/data.json" value="'+esc(meta.dataUrl||"")+'">'
+    +'<div class="row" style="margin-top:8px"><button class="btn sm" id="saveUrlBtn">URLを保存</button></div>'
+    +'<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">'
+    +'<label style="display:flex;align-items:center;gap:10px;font-size:13px"><input type="checkbox" id="pureChk" style="width:18px;height:18px;accent-color:var(--red)" '+(meta.pure?"checked":"")+'>'
+    +'<span>ピュア・パリミュチュエルモード<br><small style="color:var(--sub)">統計スコアを無効化し、実測配当プレミアムの最大化だけで番号を探索(探索幅も拡大)</small></span></label>'
+    +'<label class="flabel" style="margin-top:12px">月間上限（円・STOP判定に使用）</label>'
+    +'<input type="number" id="mCapInput" inputmode="numeric" min="200" step="200" value="'+meta.mCap+'">'
+    +'</div>'
+    +'<p style="margin-top:8px" class="mono">実配当データ: '+psCount+' / '+draws.length+'回分 保持'+(CAL.ready?"(較正有効)":"")+'</p></div>';
+  h+='<div class="card"><h3>一括インポート（過去分のバックフィル用）</h3>'
+    +'<p style="font-size:11px;color:var(--sub);margin-bottom:6px">1行1件。「回号,番号」「回号,番号,YYYY-MM-DD」または番号のみ(4桁)。集計サイトからのコピペを想定。</p>'
+    +'<textarea id="bulk" rows="4" placeholder="6798,0731&#10;6799,2214,2026-07-09&#10;6800,9046"></textarea>'
+    +'<div class="row" style="margin-top:8px"><button class="btn sm" id="bulkBtn">インポート</button>'
+    +'<button class="btn sm ghost" id="importJsonBtn">JSON復元(予想ログ含む)</button>'
+    +'<input type="file" id="jsonFile" accept=".json" style="display:none"></div></div>';
+  h+='<div class="card"><h3>手動追加（1件ずつ・古い回から順に）</h3>'
+    +'<div class="row"><input type="text" id="one" inputmode="numeric" maxlength="4" placeholder="例: 4071">'
+    +'<button class="btn" id="addBtn">追加</button></div>'
+    +'<div class="row" style="margin-top:10px"><button class="btn sm ghost" id="demoBtn">デモデータ生成</button>'
+    +'<button class="btn sm danger" id="clearBtn">全削除</button></div></div>';
+  if(draws.length){
+    h+='<div class="card"><h3>全期間・数字別出現回数（全位置合算）</h3>'+freqBars()+'</div>';
+    h+='<div class="card list">'+[...draws].reverse().slice(0,80).map(d=>
+      '<div class="li mono"><span class="rn">第'+d.r+'回'+(d.d?' ('+esc(d.d)+')':"")+(d.ps?' ¥'+d.ps.toLocaleString():"")+'</span><span style="letter-spacing:.2em">'+d.n+'</span></div>').join("")+'</div>';
+  }
+  return h;
+}
+
+/* ================= レンダラ & イベント ================= */
+function renderHeader(){
+  document.getElementById("hcount").textContent="DATA "+draws.length+"回";
+  document.getElementById("hsync").textContent=meta.lastSync?("同期 "+new Date(meta.lastSync).toLocaleString("ja-JP",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})):"";
+}
+function renderTab(t){tab=t;
+  document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.tab===t));
+  render();
+}
+function render(){
+  renderHeader();
+  const main=document.getElementById("main");
+  main.innerHTML='<div class="fade">'+(
+    tab==="signal"?renderSignal()
+    :tab==="backtest"?renderBacktest()
+    :tab==="mylog"?renderMylog()
+    :renderData())+'</div>';
+  bindTab();
+  if(tab==="backtest")renderBTBody();
+}
+function bindTab(){
+  const $=id=>document.getElementById(id);
+  const on=(id,fn,ev)=>{const el=$(id);if(el)el.addEventListener(ev||"click",fn)};
+  on("demoBtn",genDemo); on("demoBtn2",genDemo);
+  on("clearBtn",()=>{if(confirm("全データを削除しますか?(予想ログは残ります)")){draws=[];BT={key:"",rows:[]};saveDraws();buildCalibration();setMsg("全削除しました");render()}});
+  on("bulkBtn",()=>importBulk($("bulk").value));
+  on("saveUrlBtn",()=>{meta.dataUrl=$("dataUrl").value.trim();saveMeta();setMsg("URLを保存しました")});
+  on("importJsonBtn",()=>$("jsonFile").click());
+  const jf=$("jsonFile"); if(jf)jf.addEventListener("change",e=>{if(e.target.files[0])importJsonFile(e.target.files[0])});
+  on("addBtn",()=>{
+    const v=$("one").value.replace(/\D/g,"");
+    if(!/^\d{4}$/.test(v)){setMsg("4桁の数字を入力してください");return}
+    const nextR=draws.length?Math.max(...draws.map(x=>x.r))+1:1;
+    mergeDraws([{r:nextR,n:v,d:null}]);
+    $("one").value="";setMsg("追加しました(第"+nextR+"回)");render();
+  });
+  document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{mode=b.dataset.mode;render()}));
+  /* バックテスト操作 */
+  on("btPeriod",e=>{btPeriod=e.target.value;renderBTBody()},"change");
+  on("btThr",e=>{btThr=+e.target.value;const tv=$("thrVal");if(tv)tv.textContent=btThr+"%";renderBTBody()},"input");
+  on("btBet",e=>{const v=Math.max(100,Math.round((+e.target.value||200)/100)*100);btBet=v;renderBTBody()},"change");
+  on("pureChk",e=>{meta.pure=e.target.checked;saveMeta();BT={key:"",rows:[]};setMsg(meta.pure?"ピュア・パリミュチュエルモード ON":"通常モードに戻しました")},"change");
+  on("mCapInput",e=>{const v=Math.max(200,Math.round((+e.target.value||2000)/200)*200);meta.mCap=v;saveMeta();setMsg("月間上限を"+fmtYen(v)+"に設定しました")},"change");
+  /* MY LOG */
+  on("pmS",()=>{predMode="straight";render()});
+  on("pmB",()=>{predMode="box";render()});
+  on("predAddBtn",()=>{
+    if(addPred($("predRound").value,$("predNum").value.replace(/\D/g,""),predMode))render();
+  });
+  on("toMylogBtn",()=>{
+    const today=todayBias();
+    const pred=predict(draws,today);
+    const nextR=draws.length?Math.max(...draws.map(x=>x.r))+1:1;
+    if(addPred(nextR,pred.digits,"straight")){renderTab("mylog")}
+  });
+  document.querySelectorAll("[data-del]").forEach(b=>b.addEventListener("click",()=>{
+    const i=+b.dataset.del;
+    if(confirm("この予想を削除しますか?")){preds.splice(i,1);savePreds();render()}
+  }));
+}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>renderTab(b.dataset.tab)));
+document.getElementById("syncBtn").addEventListener("click",syncRemote);
+document.getElementById("exportBtn").addEventListener("click",exportJson);
+buildCalibration();
+gradePreds();
+render();
+</script>
+</body>
+</html>
